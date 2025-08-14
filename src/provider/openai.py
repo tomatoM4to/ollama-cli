@@ -1,21 +1,22 @@
 import os
 from openai import OpenAI
+from provider.provider import LLMProvider
+from typing import Iterator
 
-OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
+class OpenAIProvider(LLMProvider):
+    def __init__(self, api_key: str, model: str = 'gpt-4o') -> None:
+        self.client = OpenAI(api_key=api_key)
+        self.model = model
 
-client = OpenAI(
-    api_key=OPENAI_API_KEY
-)
+    def chat_stream(self, message: str, **kwargs) -> Iterator[str]:
+        response = self.client.chat.completions.create(
+            model=kwargs.get('model', self.model),
+            messages=[
+                {'role': 'user', 'content': message}
+            ],
+            stream=True
+        )
 
-def chat_stream(message: str, model='gpt-4o'):
-    response = client.chat.completions.create(
-        model=model,
-        messages=[
-            {"role": "user", "content": message}
-        ],
-        stream=True
-    )
-
-    for chunk in response:
-        if chunk.choices[0].delta.content is not None:
-            yield chunk.choices[0].delta.content
+        for chunk in response:
+            if chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content

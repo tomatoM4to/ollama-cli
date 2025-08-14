@@ -1,7 +1,24 @@
-from provider.openai import chat_stream
+from provider.provider import MultiLLMClient
+from provider.openai import OpenAIProvider
+from provider.anthropic import AnthropicProvider
+import os
+
+OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
+ANTHROPIC_API_KEY = os.environ['ANTHROPIC_API_KEY']
 
 def main():
-    for chunk in chat_stream('자기소개 부탁해'):
+    client: MultiLLMClient = MultiLLMClient()
+
+    client.add_provider('openai', OpenAIProvider(OPENAI_API_KEY))
+    client.add_provider('anthropic', AnthropicProvider(ANTHROPIC_API_KEY))
+
+    for chunk in client.chat_stream('openai', '자기소개 부탁해'):
+        print(chunk, end='', flush=True)
+
+    print()
+    print('=' * 10)
+
+    for chunk in client.chat_stream('anthropic', '자기소개 부탁해'):
         print(chunk, end='', flush=True)
 
 if __name__ == "__main__":
