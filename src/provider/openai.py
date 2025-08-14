@@ -1,7 +1,9 @@
-import os
+from collections.abc import Iterator
+
 from openai import OpenAI
+
 from provider.provider import LLMProvider
-from typing import Iterator
+
 
 class OpenAIProvider(LLMProvider):
     def __init__(self, api_key: str, model: str = 'gpt-4o') -> None:
@@ -17,6 +19,8 @@ class OpenAIProvider(LLMProvider):
             stream=True
         )
 
-        for chunk in response:
-            if chunk.choices[0].delta.content:
-                yield chunk.choices[0].delta.content
+        yield from (
+            chunk.choices[0].delta.content
+            for chunk in response
+            if chunk.choices[0].delta.content
+        )

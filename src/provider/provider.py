@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Iterator
-from typing import Optional, Dict
+from collections.abc import Iterator
+
 
 class LLMProvider(ABC):
     @abstractmethod
@@ -9,7 +9,7 @@ class LLMProvider(ABC):
 
 class MultiLLMClient:
     def __init__(self):
-        self.providers: Dict[str, LLMProvider] = {}
+        self.providers: dict[str, LLMProvider] = {}
 
     def add_provider(self, name: str, provider: LLMProvider):
         self.providers[name] = provider

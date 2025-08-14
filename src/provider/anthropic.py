@@ -1,6 +1,9 @@
-from typing import Iterator
+from collections.abc import Iterator
+
 import anthropic
+
 from provider.provider import LLMProvider
+
 
 class AnthropicProvider(LLMProvider):
     def __init__(self, api_key: str, model: str = "claude-3-5-sonnet-20241022"):
@@ -13,5 +16,4 @@ class AnthropicProvider(LLMProvider):
             max_tokens=kwargs.get('max_tokens', 1000),
             messages=[{"role": "user", "content": message}]
         ) as stream:
-            for text in stream.text_stream:
-                yield text
+            yield from stream.text_stream
