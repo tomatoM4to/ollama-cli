@@ -7,6 +7,7 @@ class LLMProvider(ABC):
     def chat_stream(self, message: str, **kwargs) -> Iterator[str]:
         pass
 
+
 class MultiLLMClient:
     def __init__(self):
         self.providers: dict[str, LLMProvider] = {}

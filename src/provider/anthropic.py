@@ -12,8 +12,8 @@ class AnthropicProvider(LLMProvider):
 
     def chat_stream(self, message: str, **kwargs) -> Iterator[str]:
         with self.client.messages.stream(
-            model=kwargs.get('model', self.model),
-            max_tokens=kwargs.get('max_tokens', 1000),
-            messages=[{"role": "user", "content": message}]
+            model=kwargs.get("model", self.model),
+            max_tokens=kwargs.get("max_tokens", 1000),
+            messages=[{"role": "user", "content": message}],
         ) as stream:
             yield from stream.text_stream
