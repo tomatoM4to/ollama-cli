@@ -1,28 +1,23 @@
 import os
 
-from provider.anthropic import AnthropicProvider
-from provider.openai import OpenAIProvider
-from provider.provider import MultiLLMClient
+from ollama_cli.settings.settings import Settings, load_user_settings
 
-OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
-ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
 
 
 def main():
-    client: MultiLLMClient = MultiLLMClient()
+    user_settings: Settings | None = load_user_settings()
 
-    client.add_provider("openai", OpenAIProvider(OPENAI_API_KEY))
-    client.add_provider("anthropic", AnthropicProvider(ANTHROPIC_API_KEY))
+    if user_settings is None:
+        return
 
-    for chunk in client.chat_stream("openai", "자기소개 부탁해"):
-        print(chunk, end="", flush=True)
-
-    print()
-    print("=" * 10)
-
-    for chunk in client.chat_stream("anthropic", "자기소개 부탁해"):
-        print(chunk, end="", flush=True)
-
+    if user_settings.default == "openai":
+        print("Using OpenAI as the default provider.")
+    elif user_settings.default == "anthropic":
+        print("Using Anthropic as the default provider.")
+    elif user_settings.default == "ollama":
+        print("Using Ollama as the default provider.")
 
 if __name__ == "__main__":
     main()

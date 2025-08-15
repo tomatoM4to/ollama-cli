@@ -1,0 +1,71 @@
+{
+    "default": "openai",
+    "features": {
+        "agent_mod": true,
+        "git_enabled": true
+    },
+    "providers": {
+        "anthropic": {
+            "api_key": "ANTHROPIC_API_KEY",
+            "available_models": [
+                "claude-sonnet-4-20250514",
+                "claude-3-5-sonnet-20241022",
+                "claude-3-haiku-20240307",
+                "claude-3-opus-20240229"
+            ],
+            "default_model": "claude-3-5-sonnet-20241022",
+            "default_parameters": {
+                "max_tokens": 4000,
+                "temperature": 0.7,
+                "top_p": 1.0
+            },
+            "enabled": true
+        },
+        "ollama": {
+            "api_key": null,
+            "available_models": [
+                "llama3.2",
+                "codellama",
+                "llama3.2:13b",
+                "qwen2.5-coder"
+            ],
+            "base_url": "http://localhost:11434",
+            "default_model": "llama3.2",
+            "default_parameters": {
+                "temperature": 0.7,
+                "top_k": 40,
+                "top_p": 1.0
+            },
+            "enabled": false
+        },
+        "openai": {
+            "api_key": "OPENAI_API_KEY",
+            "available_models": [
+                "gpt-4o",
+                "gpt-4o-mini",
+                "gpt-4-turbo",
+                "gpt-3.5-turbo"
+            ],
+            "default_model": "gpt-4o",
+            "default_parameters": {
+                "max_tokens": 4000,
+                "temperature": 0.7,
+                "top_p": 1.0
+            },
+            "enabled": true
+        }
+    },
+    "shortcuts": {
+        "creative": "claude-3-5-sonnet-20241022",
+        "fast": "gpt-4o-mini",
+        "local": "llama3.2",
+        "smart": "gpt-4o"
+    },
+    "ui": {
+        "color_output": true,
+        "show_cost": false,
+        "show_model": true,
+        "show_provider": true,
+        "stream_response": true
+    }
+}
