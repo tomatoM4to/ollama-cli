@@ -1,5 +1,5 @@
 {
-    "default": "openai",
+    "default": "ollama",
     "features": {
         "agent_mod": true,
         "git_enabled": true

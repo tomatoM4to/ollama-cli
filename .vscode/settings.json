@@ -1,0 +1,5 @@
+{
+    "files.associations": {
+        "**/src/ollama_cli/ui/**/*.css": "plaintext"
+    }
+}

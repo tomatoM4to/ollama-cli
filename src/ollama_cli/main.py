@@ -1,6 +1,7 @@
 import os
 
 from ollama_cli.settings.settings import Settings, load_user_settings
+from ollama_cli.ui.app import ChatInterface
 from provider.anthropic import AnthropicProvider
 from provider.ollama import OllamaProvider
 from provider.openai import OpenAIProvider
@@ -33,15 +34,8 @@ def main():
     elif user_settings.default == "ollama":
         print("Using Ollama as the default provider.")
 
-    test_message = "Hello, how are you?"
-    print(f"\nTesting {user_settings.default} provider:")
-
-    try:
-        for chunk in client.chat_stream('ollama', test_message):
-            print(chunk, end="", flush=True)
-        print("\n")
-    except Exception as e:
-        print(f"Error: {e}")
+    app = ChatInterface()
+    app.run()
 
 if __name__ == "__main__":
     main()
