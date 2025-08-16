@@ -8,6 +8,9 @@ Key components:
 - ChatMessage: Custom widget for displaying formatted chat messages
 - ChatInterface: Main application class handling the UI and bot interactions
 - Background processing: Asynchronous message handling to keep UI responsive
+
+Original code by oneryalcin - https://github.com/oneryalcin/blog_textual_observer
+Modified by Me
 """
 
 from datetime import datetime
