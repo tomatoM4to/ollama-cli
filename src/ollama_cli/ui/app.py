@@ -75,11 +75,11 @@ class ChatInterface(App):
         Binding("ctrl+c", "quit", "Quit", show=False),
     ]
 
-    def __init__(self) -> None:
+    def __init__(self, model: str) -> None:
         """Initialize the chat interface with an OllamaBot instance."""
         super().__init__()
         # Use OllamaBot instead of SimpleBot for streaming responses
-        self.bot = OllamaBot()
+        self.bot = OllamaBot(model=model)
         # Fallback to SimpleBot if Ollama is not available
         # self.bot = SimpleBot()
 
@@ -267,7 +267,3 @@ class ChatInterface(App):
 
         # Process message with streaming asynchronously
         self.process_message_stream_in_background(user_input)
-
-if __name__ == "__main__":
-    app = ChatInterface()
-    app.run()

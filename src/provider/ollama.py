@@ -6,7 +6,7 @@ from provider.provider import LLMProvider
 
 
 class OllamaProvider(LLMProvider):
-    def __init__(self, base_url: str = "http://localhost:11434", model: str = "exaone-deep:7.8b"):
+    def __init__(self, model: str, base_url: str = "http://localhost:11434"):
         self.model = model
         self.client = ollama.Client(host=base_url)
 
