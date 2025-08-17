@@ -30,27 +30,68 @@ from ollama_cli.ui.callbacks import FileLogCallback, TuiCallback
 
 class ChatMessage(Label):
     """
-    A custom widget for displaying chat messages with formatting.
+    A custom widget for displaying chat messages with enhanced formatting and styling.
 
     Each message shows:
-    - The sender's name in bold
-    - A timestamp
-    - The message content
+    - The sender's name with appropriate styling
+    - A formatted timestamp
+    - The message content with proper formatting
+    - Different visual styles based on sender type
 
     Args:
-        sender (str): Name of the message sender
+        sender (str): Name of the message sender ('You', 'Bot', 'System', 'Error')
         message (str): Content of the message
+        message_type (str): Type of message for styling ('user', 'bot', 'system', 'error', 'typing')
     """
 
-    def __init__(self, sender: str, message: str) -> None:
-        # Format timestamp as HH:MM:SS
+    def __init__(self, sender: str, message: str, message_type: str = "bot") -> None:
+        # Format timestamp with better styling
         current_time = datetime.now().strftime("%H:%M:%S")
-        # Create rich text with safe markup handling
+
+        # Create rich text with enhanced formatting
         formatted_message = Text()
-        formatted_message.append(sender, style="bold")
-        formatted_message.append(f" ({current_time})\n")
-        formatted_message.append(message)
+
+        # Add sender name with appropriate styling
+        if sender == "You":
+            formatted_message.append("👤 ", style="bold cyan")
+            formatted_message.append(sender, style="bold bright_white")
+        elif sender == "Bot":
+            formatted_message.append("🤖 ", style="bold bright_cyan")
+            formatted_message.append(sender, style="bold bright_cyan")
+        elif sender == "System":
+            formatted_message.append("ℹ️  ", style="bold green")
+            formatted_message.append(sender, style="bold green")
+        elif sender == "Error":
+            formatted_message.append("❌ ", style="bold red")
+            formatted_message.append(sender, style="bold red")
+        else:
+            formatted_message.append(sender, style="bold")
+
+        # Add timestamp with subtle styling
+        formatted_message.append(f" • {current_time}", style="dim italic")
+        formatted_message.append("\n")
+
+        # Add message content with proper formatting
+        if message_type == "typing":
+            formatted_message.append("💭 ", style="dim")
+            formatted_message.append(message, style="italic dim")
+        else:
+            formatted_message.append(message)
+
         super().__init__(formatted_message)
+
+        # Add CSS classes after initialization
+        if sender == "You":
+            self.add_class("user-message")
+        elif sender == "Bot":
+            self.add_class("bot-message")
+        elif sender == "System":
+            self.add_class("welcome-message")
+        elif sender == "Error":
+            self.add_class("error-message")
+
+        if message_type == "typing":
+            self.add_class("typing-indicator")
 
 class ChatInterface(App):
     """
@@ -132,25 +173,29 @@ class ChatInterface(App):
 
     def compose(self) -> ComposeResult:
         """
-        Create and arrange the UI widgets.
+        Create and arrange the UI widgets with enhanced styling.
 
         Layout:
-        - Header at the top
-        - Chat container with:
-            - Scrollable message history
-            - Input field at the bottom
+        - Styled header at the top
+        - Enhanced chat container with:
+            - Scrollable message history with custom styling
+            - Modern input field at the bottom
         """
         yield Header()
         with Container(id="chat-container"):
             with ScrollableContainer(id="message-container"):
-                # Display initial welcome message
-                yield ChatMessage("Bot", "Hello! How can I help you today?")
+                # Display enhanced welcome message
+                welcome_msg = "🎉 Welcome to the AI Chat Interface! 🎉\n\n💬 I'm here to help you with any questions or tasks.\n✨ Type your message below and press Enter to start chatting!"
+                yield ChatMessage("System", welcome_msg, "system")
             with Container(id="input-container"):
-                yield Input(placeholder="Type your message here and press Enter...", id="user-input")
+                yield Input(
+                    placeholder="💭 Type your message here and press Enter to chat...",
+                    id="user-input"
+                )
 
 
     def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
-        """Handle worker state changes.
+        """Handle worker state changes with enhanced messaging.
 
         Args:
             event (Worker.StateChanged): The worker state change event
@@ -174,11 +219,11 @@ class ChatInterface(App):
                 # For non-streaming, we still add the complete response
                 if event.worker.name == "bot_processing":
                     result: Any = event.worker.result
-                    message_container.mount(ChatMessage("Bot", result))
+                    message_container.mount(ChatMessage("Bot", result, "bot"))
                     message_container.scroll_end(animate=False)
             elif event.worker.state == WorkerState.ERROR:
-                error_message = "An error occurred while processing your message."
-                message_container.mount(ChatMessage("Bot", error_message))
+                error_message = "⚠️ Oops! Something went wrong while processing your message.\n🔄 Please try again or rephrase your question."
+                message_container.mount(ChatMessage("Error", error_message, "error"))
                 message_container.scroll_end(animate=False)
 
 
@@ -192,7 +237,7 @@ class ChatInterface(App):
             Worker: A background worker processing the message
         """
         message_container = self.query_one("#message-container")
-        message_container.mount(ChatMessage("You", user_input))
+        message_container.mount(ChatMessage("You", user_input, "user"))
         message_container.scroll_end(animate=False)
 
         # Create worker for background processing
@@ -213,11 +258,15 @@ class ChatInterface(App):
             Worker: A background worker processing the streaming message
         """
         message_container = self.query_one("#message-container")
-        message_container.mount(ChatMessage("You", user_input))
+        message_container.mount(ChatMessage("You", user_input, "user"))
+
+        # Add typing indicator
+        typing_indicator = ChatMessage("Bot", "Thinking...", "typing")
+        message_container.mount(typing_indicator)
         message_container.scroll_end(animate=False)
 
         def stream_processing():
-            """Handle streaming message processing."""
+            """Handle streaming message processing with enhanced error handling."""
             try:
                 # Notify start of streaming
                 self.bot.notify_callbacks(ChatEvent.STREAM_START, "")
@@ -229,14 +278,17 @@ class ChatInterface(App):
                     # Notify each chunk
                     self.bot.notify_callbacks(ChatEvent.STREAM_CHUNK, chunk)
 
-                # Notify end of streaming
+                # Remove typing indicator and notify end of streaming
+                message_container.remove_children([typing_indicator])
                 self.bot.notify_callbacks(ChatEvent.STREAM_END, "")
                 return ''.join(response_parts)
 
             except Exception as e:
-                error_message = f"Streaming error: {str(e)}"
+                # Remove typing indicator on error
+                message_container.remove_children([typing_indicator])
+                error_message = f"🔌 Connection issue: {str(e)}\n💡 Please check your connection and try again."
                 self.bot.notify_callbacks(ChatEvent.ERROR, error_message)
-                return "I encountered an error while streaming the response."
+                return "⚠️ I encountered a technical difficulty. Please try your request again."
 
         # Import ChatEvent here to avoid circular imports
         from ollama_cli.ui.callbacks import ChatEvent

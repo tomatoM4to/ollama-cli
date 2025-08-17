@@ -56,17 +56,21 @@ class TuiCallback(ChatCallback):
     def on_event(self, event: ChatEvent, message: str) -> None:
         def update_ui() -> None:
             if event == ChatEvent.START_PROCESSING:
-                self.message_container.mount(self.create_message("Event", "🤔 Processing your message..."))
+                processing_msg = self.create_message("System", "🤔 Processing your message...", "system")
+                self.message_container.mount(processing_msg)
             elif event == ChatEvent.THINKING:
-                self.message_container.mount(self.create_message("Event", f"💭 {message}"))
+                thinking_msg = self.create_message("Bot", f"💭 {message}", "typing")
+                self.message_container.mount(thinking_msg)
             elif event == ChatEvent.ERROR:
-                self.message_container.mount(self.create_message("Event", f"❌ Error: {message}"))
+                error_msg = self.create_message("Error", f"❌ {message}", "error")
+                self.message_container.mount(error_msg)
             elif event == ChatEvent.PROCESSING_COMPLETE:
-                self.message_container.mount(self.create_message("Event", "✅ Response complete"))
+                complete_msg = self.create_message("System", "✅ Response complete", "system")
+                self.message_container.mount(complete_msg)
             elif event == ChatEvent.STREAM_START:
                 # Create a new bot message for streaming
                 self.current_content = ""  # Reset content
-                self.current_bot_message = self.create_message("Bot", "")
+                self.current_bot_message = self.create_message("Bot", "", "bot")
                 self.message_container.mount(self.current_bot_message)
             elif event == ChatEvent.STREAM_CHUNK:
                 # Update the current bot message with new content
@@ -74,16 +78,18 @@ class TuiCallback(ChatCallback):
                     # Safely append the new chunk to our content
                     self.current_content += message
 
-                    # Create a clean text update without complex markup parsing
+                    # Create a clean text update with enhanced formatting
                     from datetime import datetime
-
                     from rich.text import Text
+
                     current_time = datetime.now().strftime("%H:%M:%S")
 
-                    # Create the updated message with safe text handling
+                    # Create the updated message with enhanced styling
                     updated_message = Text()
-                    updated_message.append("Bot", style="bold")
-                    updated_message.append(f" ({current_time})\n")
+                    updated_message.append("🤖 ", style="bold bright_cyan")
+                    updated_message.append("Bot", style="bold bright_cyan")
+                    updated_message.append(f" • {current_time}", style="dim italic")
+                    updated_message.append("\n")
                     updated_message.append(self.current_content)
 
                     self.current_bot_message.update(updated_message)
