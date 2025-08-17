@@ -1,4 +1,4 @@
-/* ===== VS Code 다크 테마 스타일 (개선된 버전) ===== */
+/* ===== VS Code 다크 테마 스타일 (수정된 버전) ===== */
 
 /* ===== 메인 화면 설정 ===== */
 Screen {
@@ -14,22 +14,20 @@ Header {
     border-bottom: solid #30363d;
 }
 
-/* ===== 채팅 컨테이너 ===== */
+/* ===== 채팅 컨테이너 (수정됨) ===== */
 #chat-container {
     width: 92%;
     height: 96%;
     border: solid #30363d;
     background: #161b22;
     padding: 1;
-    layout: grid;
-    grid-size: 1;
-    grid-rows: 1fr auto;
+    layout: vertical;  /* grid 대신 vertical 레이아웃 사용 */
 }
 
-/* ===== 메시지 컨테이너 ===== */
+/* ===== 메시지 컨테이너 (수정됨) ===== */
 #message-container {
     width: 100%;
-    height: 100%;
+    height: 1fr;  /* 남은 공간을 모두 차지 */
     overflow-y: auto;
     border-bottom: solid #21262d;
     background: #0d1117;
@@ -39,23 +37,24 @@ Header {
     padding: 1;
 }
 
-/* ===== 입력 컨테이너 ===== */
+/* ===== 입력 컨테이너 (수정됨) ===== */
 #input-container {
     width: 100%;
-    height: 4;
-    align: center bottom;
+    height: auto;  /* 고정 높이 대신 auto 사용 */
+    min-height: 5;  /* 최소 높이 보장 */
+    dock: bottom;   /* 하단에 고정 */
     background: #21262d;
     padding: 1;
     margin: 0;
 }
 
-/* ===== 입력 필드 스타일링 ===== */
+/* ===== 입력 필드 스타일링 (수정됨) ===== */
 Input {
     width: 100%;
+    height: 3;
     margin: 0;
     background: #161b22;
     border: solid #238636;
-    height: 3;
     color: #f0f6fc;
     text-style: none;
 }
