@@ -3,18 +3,37 @@ from collections.abc import Iterator
 import ollama
 
 from provider.provider import LLMProvider
-
+from core.prompt import PromptManager
 
 class OllamaProvider(LLMProvider):
-    def __init__(self, model: str, base_url: str = "http://localhost:11434"):
+    def __init__(
+            self,
+            model: str,
+            base_url: str = "http://localhost:11434",
+            auto_detect_mode: bool = True,
+            default_mode: str = 'conversation_mode'
+    ):
         self.model = model
         self.client = ollama.Client(host=base_url)
+        self.prompt_manager = PromptManager()
+        self.auto_detect_mode = auto_detect_mode
+        self.default_mode = default_mode
 
-    def chat_stream(self, message: str) -> Iterator[str]:
+    def chat_stream(self, message: str, mode: str | None = None) -> Iterator[str]:
+        if mode is None and self.auto_detect_mode:
+            mode = self.prompt_manager.detect_response_type(message)
+        elif mode is None:
+            mode = self.default_mode
+
+        prompt = self.prompt_manager.get_conversation_prompt(
+            user_message=message,
+            context=None,  # Context can be passed if available
+            mode=mode
+        )
         try:
             response_stream = self.client.generate(
                 model=self.model,
-                prompt=message,
+                prompt=prompt,
                 stream=True
             )
 
