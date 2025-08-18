@@ -74,6 +74,11 @@ def fix_malformed_code_blocks(text: str) -> str:
     """
     Advanced fix for malformed code blocks using line-by-line processing.
     This preserves all internal formatting and newlines within code blocks.
+    
+    Key improvements:
+    - Separates language tag processing from code content
+    - Preserves exact indentation and whitespace in code
+    - Handles stuck language tags and closing markers properly
 
     Args:
         text (str): The raw text containing potentially malformed code blocks
@@ -81,11 +86,18 @@ def fix_malformed_code_blocks(text: str) -> str:
     Returns:
         str: Text with properly formatted code blocks
     """
+    # Define known programming languages (sorted by length to avoid partial matches)
+    known_languages = [
+        'javascript', 'typescript', 'dockerfile', 'powershell', 'csharp', 
+        'python', 'kotlin', 'scala', 'swift', 'html', 'yaml', 'json',
+        'bash', 'ruby', 'java', 'rust', 'cpp', 'php', 'sql', 'xml',
+        'yml', 'css', 'c++', 'c#', 'go', 'sh', 'js', 'ts', 'py', 'rb', 'c'
+    ]
+    
     lines = text.split('\n')
     fixed_lines = []
     in_code_block = False
     code_block_lines = []
-    current_language = None
 
     i = 0
     while i < len(lines):
@@ -93,73 +105,127 @@ def fix_malformed_code_blocks(text: str) -> str:
 
         # Check for code block start
         if line.strip().startswith('```') and not in_code_block:
-            # Extract language and potential stuck code
-            match = re.match(r'```(\w*)(.*)$', line.strip())
-            if match:
-                language = match.group(1)
-                stuck_code = match.group(2)
+            stripped_line = line.strip()
+            
+            if len(stripped_line) == 3:
+                # Just ``` without language
+                fixed_lines.append('```')
+                code_block_lines = []
+            else:
+                # Extract what comes after ```
+                after_backticks = stripped_line[3:]
+                language = ''
+                code_content = ''
+                
+                # Try to match known languages
+                for lang in known_languages:
+                    if after_backticks.lower().startswith(lang.lower()):
+                        next_pos = len(lang)
+                        # Check if this is the complete language (not part of a longer word)
+                        if next_pos == len(after_backticks):
+                            # Perfect match - just the language
+                            language = lang
+                            code_content = ''
+                            break
+                        elif next_pos < len(after_backticks):
+                            next_char = after_backticks[next_pos]
+                            # For known languages, be more permissive - assume code is stuck
+                            # if the next character could be the start of code
+                            if (next_char.isalpha() or next_char == '_' or next_char == '(' or 
+                                next_char == '{' or next_char == '[' or next_char == ' '):
+                                # This looks like stuck code
+                                language = lang
+                                code_content = after_backticks[next_pos:]
+                                break
+                            elif not (next_char.isalpha() or next_char.isdigit() or next_char == '_'):
+                                # Traditional separator (space, punctuation, etc.)
+                                language = lang
+                                code_content = after_backticks[next_pos:]
+                                break
+                
+                # If no language detected, try generic detection
+                if not language:
+                    # Look for pattern: sequence of letters/numbers followed by non-letter
+                    match = re.match(r'^([a-zA-Z][a-zA-Z0-9_+-]*?)([^a-zA-Z0-9_+-].*)?$', after_backticks)
+                    if match and len(match.group(1)) <= 20:  # Reasonable language name length
+                        language = match.group(1).lower()
+                        code_content = match.group(2) or ''
+                    else:
+                        # Treat entire thing as language if short enough, otherwise as malformed
+                        if len(after_backticks) <= 20 and after_backticks.isalnum():
+                            language = after_backticks.lower()
+                            code_content = ''
+                        else:
+                            # Malformed - treat as code without language
+                            language = ''
+                            code_content = after_backticks
 
-                # Start new code block
-                current_language = language
-                fixed_lines.append(f'```{language}')
-
-                # If there's stuck code, add it as first line of code block
-                if stuck_code and stuck_code.strip():
-                    code_block_lines = [stuck_code.strip()]
+                # Start code block
+                if language:
+                    fixed_lines.append(f'```{language}')
+                else:
+                    fixed_lines.append('```')
+                
+                # Add any stuck code content
+                if code_content and not code_content.isspace():
+                    code_block_lines = [code_content]
                 else:
                     code_block_lines = []
 
-                in_code_block = True
-            else:
-                # Malformed opening, treat as regular line
-                fixed_lines.append(line)
+            in_code_block = True
 
         # Check for code block end
         elif '```' in line and in_code_block:
-            # Check if code is stuck to closing tag
+            closing_pos = line.find('```')
+            
             if line.strip() == '```':
-                # Properly formatted closing tag
-                # Add all accumulated code block lines
+                # Clean closing tag
                 fixed_lines.extend(code_block_lines)
                 fixed_lines.append('```')
             else:
-                # Code might be stuck to closing tag
-                closing_pos = line.find('```')
+                # Handle code stuck to closing tag
                 if closing_pos > 0:
-                    # There's code before the closing tag
+                    # Code before closing tag
                     code_part = line[:closing_pos]
-                    after_part = line[closing_pos + 3:]
-
-                    # Add the code part to code block
-                    if code_part.strip():
-                        code_block_lines.append(code_part)
-
-                    # Add all accumulated code block lines
+                    remaining_part = line[closing_pos + 3:]
+                    
+                    # Add code part (preserve exact whitespace)
+                    code_block_lines.append(code_part)
+                    
+                    # Close code block
                     fixed_lines.extend(code_block_lines)
                     fixed_lines.append('```')
-
-                    # Add any content after closing tag
-                    if after_part.strip():
-                        fixed_lines.append(after_part)
+                    
+                    # Add remaining content after closing tag if any
+                    if remaining_part.strip():
+                        fixed_lines.append(remaining_part)
+                        
+                elif closing_pos == 0:
+                    # Closing tag at start, but with content after
+                    remaining_part = line[3:]
+                    fixed_lines.extend(code_block_lines)
+                    fixed_lines.append('```')
+                    if remaining_part.strip():
+                        fixed_lines.append(remaining_part)
                 else:
-                    # Multiple ``` or other complex case
+                    # No ``` found (shouldn't happen), treat as code line
                     code_block_lines.append(line)
+                    continue
 
             in_code_block = False
             code_block_lines = []
-            current_language = None
 
         elif in_code_block:
-            # We're inside a code block, preserve the line exactly as is
+            # Inside code block - preserve exactly as is
             code_block_lines.append(line)
         else:
-            # Regular line outside code block
+            # Regular line outside code blocks
             fixed_lines.append(line)
 
         i += 1
 
-    # Handle case where code block was never closed
-    if in_code_block and code_block_lines:
+    # Handle unclosed code blocks
+    if in_code_block:
         fixed_lines.extend(code_block_lines)
         fixed_lines.append('```')
 
