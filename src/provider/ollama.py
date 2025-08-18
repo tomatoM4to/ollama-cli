@@ -34,7 +34,8 @@ class OllamaProvider(LLMProvider):
             response_stream = self.client.generate(
                 model=self.model,
                 prompt=prompt,
-                stream=True
+                stream=True,
+                think=False,  # Disable thinking time for streaming
             )
 
             for chunk in response_stream:

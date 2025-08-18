@@ -78,21 +78,20 @@ class TuiCallback(ChatCallback):
                     # Safely append the new chunk to our content
                     self.current_content += message
 
-                    # Create a clean text update with enhanced formatting
-                    from datetime import datetime
-                    from rich.text import Text
-
-                    current_time = datetime.now().strftime("%H:%M:%S")
-
-                    # Create the updated message with enhanced styling
-                    updated_message = Text()
-                    updated_message.append("🤖 ", style="bold bright_cyan")
-                    updated_message.append("Bot", style="bold bright_cyan")
-                    updated_message.append(f" • {current_time}", style="dim italic")
-                    updated_message.append("\n")
-                    updated_message.append(self.current_content)
-
-                    self.current_bot_message.update(updated_message)
+                    # Update the content widget directly
+                    if hasattr(self.current_bot_message, 'content_widget'):
+                        # For markdown content, recreate the widget
+                        if hasattr(self.current_bot_message.content_widget, 'update'):
+                            try:
+                                from ollama_cli.ui.markdown_parser import preprocess_markdown
+                                processed_content = preprocess_markdown(self.current_content)
+                                self.current_bot_message.content_widget.update(processed_content)
+                            except Exception:
+                                # Fallback to plain text update
+                                from rich.text import Text
+                                content_text = Text(self.current_content)
+                                if hasattr(self.current_bot_message.content_widget, 'renderable'):
+                                    self.current_bot_message.content_widget.renderable = content_text
             elif event == ChatEvent.STREAM_END:
                 # Mark streaming as complete
                 self.current_bot_message = None

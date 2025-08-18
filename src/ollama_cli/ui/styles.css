@@ -72,13 +72,47 @@ Input > .input--placeholder {
 /* ===== 기본 채팅 메시지 스타일 ===== */
 ChatMessage {
     width: 98%;
-    padding: 1 2;
+    padding: 1;
     margin: 1;
     height: auto;
     text-style: none;
     border-left: solid #1f6feb;
     background: #161b22;
     color: #e6edf3;
+    layout: vertical;
+}
+
+/* ===== 메시지 헤더 (발신자 + 시간) 스타일 ===== */
+ChatMessage Label {
+    width: 100%;
+    height: auto;
+    padding: 0 1;
+    background: transparent;
+}
+
+/* ===== 마크다운 콘텐츠 스타일 ===== */
+ChatMessage Markdown {
+    width: 100%;
+    height: auto;
+    padding: 1;
+    background: transparent;
+    color: #e6edf3;
+}
+
+/* ===== 마크다운 코드 블록 스타일 ===== */
+ChatMessage Markdown .code {
+    background: #0d1117;
+    border: solid #30363d;
+    color: #e6edf3;
+    padding: 1;
+    margin: 1 0;
+}
+
+/* ===== 마크다운 인라인 코드 스타일 ===== */
+ChatMessage Markdown .inline-code {
+    background: #21262d;
+    color: #f85149;
+    padding: 0 1;
 }
 
 /* ===== 사용자 메시지 스타일 ===== */

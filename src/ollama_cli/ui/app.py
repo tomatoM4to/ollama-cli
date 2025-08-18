@@ -20,67 +20,87 @@ from typing import Any
 from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Container, ScrollableContainer
-from textual.widgets import Header, Input, Label
+from textual.containers import Container, ScrollableContainer, Vertical
+from textual.widgets import Header, Input, Label, Markdown
 from textual.worker import Worker, WorkerState
 
 from ollama_cli.ui.bot import OllamaBot
 from ollama_cli.ui.callbacks import FileLogCallback, TuiCallback
+from ollama_cli.ui.markdown_parser import create_markdown_widget, preprocess_markdown
 
 
-class ChatMessage(Label):
+class ChatMessage(Vertical):
     """
     A custom widget for displaying chat messages with enhanced formatting and styling.
 
     Each message shows:
     - The sender's name with appropriate styling
     - A formatted timestamp
-    - The message content with proper formatting
+    - The message content with proper formatting (supports markdown)
     - Different visual styles based on sender type
 
     Args:
         sender (str): Name of the message sender ('You', 'Bot', 'System', 'Error')
         message (str): Content of the message
         message_type (str): Type of message for styling ('user', 'bot', 'system', 'error', 'typing')
+        use_markdown (bool): Whether to render message as markdown (default: False for non-bot messages)
     """
 
-    def __init__(self, sender: str, message: str, message_type: str = "bot") -> None:
+    def __init__(self, sender: str, message: str, message_type: str = "bot", use_markdown: bool | None = None) -> None:
+        super().__init__()
+
+        # Determine if we should use markdown rendering
+        if use_markdown is None:
+            # Use markdown for bot responses by default, plain text for others
+            use_markdown = (sender == "Bot" and message_type not in ["typing"])
+
         # Format timestamp with better styling
         current_time = datetime.now().strftime("%H:%M:%S")
 
-        # Create rich text with enhanced formatting
-        formatted_message = Text()
+        # Create header with sender and timestamp
+        header_text = Text()
 
         # Add sender name with appropriate styling
         if sender == "You":
-            formatted_message.append("👤 ", style="bold cyan")
-            formatted_message.append(sender, style="bold bright_white")
+            header_text.append("👤 ", style="bold cyan")
+            header_text.append(sender, style="bold bright_white")
         elif sender == "Bot":
-            formatted_message.append("🤖 ", style="bold bright_cyan")
-            formatted_message.append(sender, style="bold bright_cyan")
+            header_text.append("🤖 ", style="bold bright_cyan")
+            header_text.append(sender, style="bold bright_cyan")
         elif sender == "System":
-            formatted_message.append("ℹ️  ", style="bold green")
-            formatted_message.append(sender, style="bold green")
+            header_text.append("ℹ️  ", style="bold green")
+            header_text.append(sender, style="bold green")
         elif sender == "Error":
-            formatted_message.append("❌ ", style="bold red")
-            formatted_message.append(sender, style="bold red")
+            header_text.append("❌ ", style="bold red")
+            header_text.append(sender, style="bold red")
         else:
-            formatted_message.append(sender, style="bold")
+            header_text.append(sender, style="bold")
 
         # Add timestamp with subtle styling
-        formatted_message.append(f" • {current_time}", style="dim italic")
-        formatted_message.append("\n")
+        header_text.append(f" • {current_time}", style="dim italic")
 
-        # Add message content with proper formatting
+        # Create header label
+        self.header_label = Label(header_text)
+
+        # Create content widget based on message type and markdown preference
         if message_type == "typing":
-            formatted_message.append("💭 ", style="dim")
-            formatted_message.append(message, style="italic dim")
+            content_text = Text()
+            content_text.append("💭 ", style="dim")
+            content_text.append(message, style="italic dim")
+            self.content_widget = Label(content_text)
+        elif use_markdown:
+            # Use markdown widget for bot responses
+            try:
+                processed_message = preprocess_markdown(message)
+                self.content_widget = Markdown(processed_message)
+            except Exception:
+                # Fallback to plain text if markdown parsing fails
+                self.content_widget = Label(message)
         else:
-            formatted_message.append(message)
+            # Use plain text for user messages and simple responses
+            self.content_widget = Label(message)
 
-        super().__init__(formatted_message)
-
-        # Add CSS classes after initialization
+        # Add CSS classes for styling
         if sender == "You":
             self.add_class("user-message")
         elif sender == "Bot":
@@ -92,6 +112,11 @@ class ChatMessage(Label):
 
         if message_type == "typing":
             self.add_class("typing-indicator")
+
+    def compose(self) -> ComposeResult:
+        """Compose the message widget with header and content."""
+        yield self.header_label
+        yield self.content_widget
 
 class ChatInterface(App):
     """
