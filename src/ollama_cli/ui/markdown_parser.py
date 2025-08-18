@@ -33,7 +33,7 @@ def fix_code_block_spacing(text: str) -> str:
     languages = [
         'javascript', 'typescript', 'python', 'kotlin', 'swift', 'bash', 'yaml',
         'json', 'html', 'ruby', 'java', 'rust', 'dart', 'cpp', 'php', 'sql',
-        'css', 'xml', 'yml', 'ts', 'js', 'py', 'rb', 'sh', 'go', 'c'
+        'css', 'xml', 'yml', 'rb', 'sh', 'go', 'c'
     ]
 
     # Step 1: Fix opening tags where language is stuck to code
