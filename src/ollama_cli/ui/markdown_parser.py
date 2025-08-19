@@ -8,7 +8,6 @@ This module provides functions to:
 """
 
 import re
-from typing import List, Tuple
 
 from textual.widgets import Markdown
 
@@ -74,7 +73,7 @@ def fix_malformed_code_blocks(text: str) -> str:
     """
     Advanced fix for malformed code blocks using line-by-line processing.
     This preserves all internal formatting and newlines within code blocks.
-    
+
     Key improvements:
     - Separates language tag processing from code content
     - Preserves exact indentation and whitespace in code
@@ -88,12 +87,12 @@ def fix_malformed_code_blocks(text: str) -> str:
     """
     # Define known programming languages (sorted by length to avoid partial matches)
     known_languages = [
-        'javascript', 'typescript', 'dockerfile', 'powershell', 'csharp', 
+        'javascript', 'typescript', 'dockerfile', 'powershell', 'csharp',
         'python', 'kotlin', 'scala', 'swift', 'html', 'yaml', 'json',
         'bash', 'ruby', 'java', 'rust', 'cpp', 'php', 'sql', 'xml',
         'yml', 'css', 'c++', 'c#', 'go', 'sh', 'js', 'ts', 'py', 'rb', 'c'
     ]
-    
+
     lines = text.split('\n')
     fixed_lines = []
     in_code_block = False
@@ -106,7 +105,7 @@ def fix_malformed_code_blocks(text: str) -> str:
         # Check for code block start
         if line.strip().startswith('```') and not in_code_block:
             stripped_line = line.strip()
-            
+
             if len(stripped_line) == 3:
                 # Just ``` without language
                 fixed_lines.append('```')
@@ -116,7 +115,7 @@ def fix_malformed_code_blocks(text: str) -> str:
                 after_backticks = stripped_line[3:]
                 language = ''
                 code_content = ''
-                
+
                 # Try to match known languages
                 for lang in known_languages:
                     if after_backticks.lower().startswith(lang.lower()):
@@ -131,7 +130,7 @@ def fix_malformed_code_blocks(text: str) -> str:
                             next_char = after_backticks[next_pos]
                             # For known languages, be more permissive - assume code is stuck
                             # if the next character could be the start of code
-                            if (next_char.isalpha() or next_char == '_' or next_char == '(' or 
+                            if (next_char.isalpha() or next_char == '_' or next_char == '(' or
                                 next_char == '{' or next_char == '[' or next_char == ' '):
                                 # This looks like stuck code
                                 language = lang
@@ -142,7 +141,7 @@ def fix_malformed_code_blocks(text: str) -> str:
                                 language = lang
                                 code_content = after_backticks[next_pos:]
                                 break
-                
+
                 # If no language detected, try generic detection
                 if not language:
                     # Look for pattern: sequence of letters/numbers followed by non-letter
@@ -165,7 +164,7 @@ def fix_malformed_code_blocks(text: str) -> str:
                     fixed_lines.append(f'```{language}')
                 else:
                     fixed_lines.append('```')
-                
+
                 # Add any stuck code content
                 if code_content and not code_content.isspace():
                     code_block_lines = [code_content]
@@ -177,7 +176,7 @@ def fix_malformed_code_blocks(text: str) -> str:
         # Check for code block end
         elif '```' in line and in_code_block:
             closing_pos = line.find('```')
-            
+
             if line.strip() == '```':
                 # Clean closing tag
                 fixed_lines.extend(code_block_lines)
@@ -188,18 +187,18 @@ def fix_malformed_code_blocks(text: str) -> str:
                     # Code before closing tag
                     code_part = line[:closing_pos]
                     remaining_part = line[closing_pos + 3:]
-                    
+
                     # Add code part (preserve exact whitespace)
                     code_block_lines.append(code_part)
-                    
+
                     # Close code block
                     fixed_lines.extend(code_block_lines)
                     fixed_lines.append('```')
-                    
+
                     # Add remaining content after closing tag if any
                     if remaining_part.strip():
                         fixed_lines.append(remaining_part)
-                        
+
                 elif closing_pos == 0:
                     # Closing tag at start, but with content after
                     remaining_part = line[3:]
@@ -318,7 +317,7 @@ def preprocess_markdown(text: str) -> str:
     return text.strip()
 
 
-def extract_code_blocks(text: str) -> List[Tuple[str, str]]:
+def extract_code_blocks(text: str) -> list[tuple[str, str]]:
     """
     Extract code blocks from markdown text, preserving internal formatting.
 

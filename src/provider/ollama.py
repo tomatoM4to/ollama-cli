@@ -2,8 +2,9 @@ from collections.abc import Iterator
 
 import ollama
 
-from provider.provider import LLMProvider
 from core.prompt import PromptManager
+from provider.provider import LLMProvider
+
 
 class OllamaProvider(LLMProvider):
     def __init__(

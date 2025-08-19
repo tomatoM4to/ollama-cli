@@ -1,19 +1,20 @@
-from pathlib import Path
+import subprocess
 import threading
+import time
+from pathlib import Path
 
 import requests
-from rich.console import Console
-from rich.panel import Panel
-from rich.prompt import Confirm, Prompt
-from rich.table import Table
-from rich.live import Live
-from rich.spinner import Spinner
-from rich.layout import Layout
-from rich.text import Text
-from rich.columns import Columns
 from rich.align import Align
-import time
-import subprocess
+from rich.columns import Columns
+from rich.console import Console
+from rich.layout import Layout
+from rich.live import Live
+from rich.panel import Panel
+from rich.prompt import Prompt
+from rich.spinner import Spinner
+from rich.table import Table
+from rich.text import Text
+
 
 def select_from_menu(
     console: Console,
@@ -299,7 +300,7 @@ https://ollama.com/download/windows 에서 다운로드
             start_new_session=True
         )
 
-        for i in range(10):
+        for _i in range(10):
             time.sleep(1)
             if self.check_ollama_service():
                 return True

@@ -18,8 +18,6 @@ class OllamaBot:
 
     def process_message_stream(self, message: str) -> Iterator[str]:
         try:
-            self.notify_callbacks(ChatEvent.START_PROCESSING, "Starting to process message with Ollama")
-
             for chunk in self.provider.chat_stream(message):
                 if chunk.strip():
                     yield chunk

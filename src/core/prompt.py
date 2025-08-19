@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class ResponseFormat(Enum):
     MARKDOWN = 'markdown'
     PLAIN = 'plain'

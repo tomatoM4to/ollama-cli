@@ -83,7 +83,9 @@ class TuiCallback(ChatCallback):
                         # For markdown content, recreate the widget
                         if hasattr(self.current_bot_message.content_widget, 'update'):
                             try:
-                                from ollama_cli.ui.markdown_parser import preprocess_markdown
+                                from ollama_cli.ui.markdown_parser import (
+                                    preprocess_markdown,
+                                )
                                 processed_content = preprocess_markdown(self.current_content)
                                 self.current_bot_message.content_widget.update(processed_content)
                             except Exception:

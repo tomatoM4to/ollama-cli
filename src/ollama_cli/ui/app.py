@@ -25,8 +25,8 @@ from textual.widgets import Header, Input, Label, Markdown
 from textual.worker import Worker, WorkerState
 
 from ollama_cli.ui.bot import OllamaBot
-from ollama_cli.ui.callbacks import FileLogCallback, TuiCallback
-from ollama_cli.ui.markdown_parser import create_markdown_widget, preprocess_markdown
+from ollama_cli.ui.callbacks import TuiCallback
+from ollama_cli.ui.markdown_parser import preprocess_markdown
 
 
 class ChatMessage(Vertical):
@@ -46,11 +46,11 @@ class ChatMessage(Vertical):
         use_markdown (bool): Whether to render message as markdown (default: False for non-bot messages)
     """
 
-    def __init__(self, sender: str, message: str, message_type: str = "bot", use_markdown: bool | None = None) -> None:
+    def __init__(self, sender: str, message: str, message_type: str = "bot", use_markdown: bool = False) -> None:
         super().__init__()
 
         # Determine if we should use markdown rendering
-        if use_markdown is None:
+        if not use_markdown:
             # Use markdown for bot responses by default, plain text for others
             use_markdown = (sender == "Bot" and message_type not in ["typing"])
 
@@ -73,6 +73,9 @@ class ChatMessage(Vertical):
         elif sender == "Error":
             header_text.append("❌ ", style="bold red")
             header_text.append(sender, style="bold red")
+        elif sender == "Ollama CLI":
+            header_text.append("🤖 ", style="bold bright_cyan")
+            header_text.append(sender, style="bold bright_cyan")
         else:
             header_text.append(sender, style="bold")
 
@@ -192,9 +195,9 @@ class ChatInterface(App):
         self.bot.add_callback(tui_callback)
 
         # Set up file logging for events
-        log_path = Path(__file__).parent / "events.log"
-        file_callback = FileLogCallback(str(log_path))
-        self.bot.add_callback(file_callback)
+        # log_path = Path(__file__).parent / "events.log"
+        # file_callback = FileLogCallback(str(log_path))
+        # self.bot.add_callback(file_callback)
 
     def compose(self) -> ComposeResult:
         """
@@ -211,7 +214,7 @@ class ChatInterface(App):
             with ScrollableContainer(id="message-container"):
                 # Display enhanced welcome message
                 welcome_msg = "🎉 Welcome to the AI Chat Interface! 🎉\n\n💬 I'm here to help you with any questions or tasks.\n✨ Type your message below and press Enter to start chatting!"
-                yield ChatMessage("System", welcome_msg, "system")
+                yield ChatMessage("Ollama CLI", welcome_msg, "system")
             with Container(id="input-container"):
                 yield Input(
                     placeholder="💭 Type your message here and press Enter to chat...",
@@ -286,9 +289,9 @@ class ChatInterface(App):
         message_container.mount(ChatMessage("You", user_input, "user"))
 
         # Add typing indicator
-        typing_indicator = ChatMessage("Bot", "Thinking...", "typing")
-        message_container.mount(typing_indicator)
-        message_container.scroll_end(animate=False)
+        # typing_indicator = ChatMessage("Bot", "Thinking...", "typing")
+        # message_container.mount(typing_indicator)
+        # message_container.scroll_end(animate=False)
 
         def stream_processing():
             """Handle streaming message processing with enhanced error handling."""
@@ -304,13 +307,13 @@ class ChatInterface(App):
                     self.bot.notify_callbacks(ChatEvent.STREAM_CHUNK, chunk)
 
                 # Remove typing indicator and notify end of streaming
-                message_container.remove_children([typing_indicator])
+                # message_container.remove_children([typing_indicator])
                 self.bot.notify_callbacks(ChatEvent.STREAM_END, "")
                 return ''.join(response_parts)
 
             except Exception as e:
                 # Remove typing indicator on error
-                message_container.remove_children([typing_indicator])
+                # message_container.remove_children([typing_indicator])
                 error_message = f"🔌 Connection issue: {str(e)}\n💡 Please check your connection and try again."
                 self.bot.notify_callbacks(ChatEvent.ERROR, error_message)
                 return "⚠️ I encountered a technical difficulty. Please try your request again."

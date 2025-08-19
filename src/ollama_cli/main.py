@@ -1,14 +1,15 @@
 import os
 
+from rich.console import Console
+from rich.panel import Panel
+
+from ollama_cli.settings.ai_setup import OllamaSetup, select_from_menu
 from ollama_cli.settings.settings import Settings, load_user_settings
 from ollama_cli.ui.app import ChatInterface
 from provider.anthropic import AnthropicProvider
 from provider.ollama import OllamaProvider
 from provider.openai import OpenAIProvider
 from provider.provider import MultiLLMClient
-from ollama_cli.settings.ai_setup import OllamaSetup, select_from_menu
-from rich.console import Console
-from rich.panel import Panel
 
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
