@@ -13,23 +13,19 @@ Original code by oneryalcin - https://github.com/oneryalcin/blog_textual_observe
 Modified by Me
 """
 
-from datetime import datetime
 from pathlib import Path
-from typing import Any
 
-from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Container, ScrollableContainer, Vertical, Horizontal
-from textual.widgets import Header, Input, Label, Markdown, Button, LoadingIndicator
+from textual.containers import Container, ScrollableContainer
+from textual.widgets import Button, Header, Input
 from textual.worker import Worker, WorkerState
 
+from ollama_cli.settings.config import ChatMode, Config
 from ollama_cli.ui.bot import OllamaBot
-from ollama_cli.ui.callbacks import TuiCallback
-from ollama_cli.ui.markdown_parser import preprocess_markdown
-from ollama_cli.ui.callbacks import ChatEvent
-from ollama_cli.settings.config import Config, ChatMode
+from ollama_cli.ui.callbacks import ChatEvent, TuiCallback
 from ollama_cli.ui.chat_message import ChatMessage, ChatType
+
 
 class ChatInterface(App):
     """

@@ -1,6 +1,8 @@
 import threading
 from enum import Enum
+
 from provider.ollama import OllamaProvider
+
 
 class ChatMode(Enum):
     ASK = 'ask'

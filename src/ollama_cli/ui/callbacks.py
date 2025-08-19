@@ -3,9 +3,10 @@ from abc import ABC, abstractmethod
 from enum import Enum
 
 from textual.app import App
-from ollama_cli.ui.markdown_parser import preprocess_markdown
-from ollama_cli.ui.chat_message import ChatMessage, ChatType
+
 from ollama_cli.settings.config import Config
+from ollama_cli.ui.chat_message import ChatMessage, ChatType
+from ollama_cli.ui.markdown_parser import preprocess_markdown
 
 
 class ChatEvent(Enum):

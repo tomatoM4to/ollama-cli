@@ -1,8 +1,8 @@
 from collections.abc import Iterator
 
-from ollama_cli.ui.callbacks import ChatCallback, ChatEvent
-from provider.ollama import OllamaProvider
 from ollama_cli.settings.config import Config
+from ollama_cli.ui.callbacks import ChatCallback, ChatEvent
+
 
 class OllamaBot:
     def __init__(self, config: Config) -> None:

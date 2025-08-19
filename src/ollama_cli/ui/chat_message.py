@@ -1,13 +1,11 @@
 from datetime import datetime
+from enum import Enum
 
 from rich.text import Text
-from textual.app import App, ComposeResult
-from textual.binding import Binding
-from textual.containers import Container, ScrollableContainer, Vertical, Horizontal
-from textual.widgets import Header, Input, Label, Markdown, Button, LoadingIndicator
+from textual.app import ComposeResult
+from textual.containers import Vertical
+from textual.widgets import Label, LoadingIndicator, Markdown
 
-from ollama_cli.ui.markdown_parser import preprocess_markdown
-from enum import Enum
 
 class ChatType(Enum):
     USER = 'user'
@@ -83,7 +81,7 @@ class ChatMessage(Vertical):
         elif use_markdown:
             # Use markdown widget for bot responses
             try:
-                processed_message = preprocess_markdown(message)
+                # processed_message = preprocess_markdown(message)
                 self.content_widget = Markdown(message)
             except Exception:
                 # Fallback to plain text if markdown parsing fails

@@ -4,8 +4,8 @@ from rich.console import Console
 from rich.panel import Panel
 
 from ollama_cli.settings.ai_setup import OllamaSetup, select_from_menu
-from ollama_cli.ui.app import ChatInterface
 from ollama_cli.settings.config import Config
+from ollama_cli.ui.app import ChatInterface
 
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
