@@ -41,11 +41,62 @@ Header {
 #input-container {
     width: 100%;
     height: auto;  /* 고정 높이 대신 auto 사용 */
-    min-height: 5;  /* 최소 높이 보장 */
+    min-height: 8;  /* 텍스트가 보이도록 높이 증가 */
     dock: bottom;   /* 하단에 고정 */
     background: #21262d;
     padding: 1;
     margin: 0;
+    layout: vertical;
+}
+
+/* ===== 버튼 컨테이너 스타일 ===== */
+#button-container {
+    width: 100%;
+    height: 4;
+    layout: horizontal;
+    align: center middle;
+    margin: 1 0 0 0;
+}
+
+/* ===== 버튼 스타일 ===== */
+#button-container Button {
+    width: 1fr;
+    height: 3;
+    margin: 0 1;
+    text-style: bold;
+    content-align: center middle;
+    background: transparent;
+    border: solid #30363d;
+}
+
+#mode-button {
+    color: #7dd3fc;
+    border: solid #0ea5e9;
+}
+
+#mode-button:hover {
+    background: rgba(14, 165, 233, 0.1);
+    border: solid #0284c7;
+}
+
+#stream-button {
+    color: #86efac;
+    border: solid #22c55e;
+}
+
+#stream-button:hover {
+    background: rgba(34, 197, 94, 0.1);
+    border: solid #16a34a;
+}
+
+#clear-button {
+    color: #fca5a5;
+    border: solid #ef4444;
+}
+
+#clear-button:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border: solid #dc2626;
 }
 
 /* ===== 입력 필드 스타일링 (수정됨) ===== */

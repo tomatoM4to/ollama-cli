@@ -21,14 +21,14 @@ from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Container, ScrollableContainer, Vertical
-from textual.widgets import Header, Input, Label, Markdown
+from textual.widgets import Header, Input, Label, Markdown, Button
 from textual.worker import Worker, WorkerState
 
 from ollama_cli.ui.bot import OllamaBot
 from ollama_cli.ui.callbacks import TuiCallback
 from ollama_cli.ui.markdown_parser import preprocess_markdown
 from ollama_cli.ui.callbacks import ChatEvent
-from ollama_cli.settings.config import Config
+from ollama_cli.settings.config import Config, ChatMode
 
 class ChatMessage(Vertical):
     """
@@ -208,18 +208,23 @@ class ChatInterface(App):
         - Enhanced chat container with:
             - Scrollable message history with custom styling
             - Modern input field at the bottom
+            - Small control buttons below input
         """
         yield Header()
         with Container(id="chat-container"):
             with ScrollableContainer(id="message-container"):
                 # Display enhanced welcome message
-                welcome_msg = "🎉 Welcome to the AI Chat Interface! 🎉\n\n💬 I'm here to help you with any questions or tasks.\n✨ Type your message below and press Enter to start chatting!"
+                welcome_msg = "Welcome to the AI Chat Interface!\n\nI'm here to help you with any questions or tasks.\nType your message below and press Enter to start chatting!"
                 yield ChatMessage("Ollama CLI", welcome_msg, "system")
-            with Container(id="input-container"):
-                yield Input(
-                    placeholder="💭 Type your message here and press Enter to chat...",
-                    id="user-input"
-                )
+        with Container(id="input-container"):
+            yield Input(
+                placeholder="Type your message here and press Enter to chat...",
+                id="user-input"
+            )
+            with Container(id="button-container"):
+                yield Button(f"Mode: {self.config.get_chat_mode().value.upper()}", id="mode-button", variant="primary")
+                yield Button(f"Stream: {'ON' if self.config.get_stream() else 'OFF'}", id="stream-button", variant="default")
+                yield Button("Clear Chat", id="clear-button", variant="error")
 
 
     def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
@@ -347,3 +352,31 @@ class ChatInterface(App):
             return
 
         self.process_message_in_background(user_input)
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle button press events."""
+        if event.button.id == "mode-button":
+            # Toggle between ASK and AGENT mode
+            current_mode = self.config.get_chat_mode()
+            new_mode = ChatMode.AGENT if current_mode == ChatMode.ASK else ChatMode.ASK
+            self.config.set_chat_mode(new_mode.value)
+
+            # Update button text
+            event.button.label = f"Mode: {new_mode.value.upper()}"
+
+        elif event.button.id == "stream-button":
+            # Toggle stream mode
+            current_stream = self.config.get_stream()
+            self.config.set_stream(not current_stream)
+
+            # Update button text
+            event.button.label = f"Stream: {'ON' if not current_stream else 'OFF'}"
+
+        elif event.button.id == "clear-button":
+            # Clear chat messages
+            message_container = self.query_one("#message-container")
+            message_container.remove_children()
+
+            # Add welcome message back
+            welcome_msg = "Welcome to the AI Chat Interface!\n\nI'm here to help you with any questions or tasks.\nType your message below and press Enter to start chatting!"
+            message_container.mount(ChatMessage("Ollama CLI", welcome_msg, "system"))
