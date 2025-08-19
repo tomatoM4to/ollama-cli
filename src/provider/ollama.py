@@ -20,17 +20,10 @@ class OllamaProvider(LLMProvider):
         self.auto_detect_mode = auto_detect_mode
         self.default_mode = default_mode
 
-    def chat_stream(self, message: str, mode: str | None = None) -> Iterator[str]:
-        if mode is None and self.auto_detect_mode:
-            mode = self.prompt_manager.detect_response_type(message)
-        elif mode is None:
-            mode = self.default_mode
+    def chat_stream(self, message: str) -> Iterator[str]:
 
-        prompt = self.prompt_manager.get_conversation_prompt(
-            user_message=message,
-            context=None,  # Context can be passed if available
-            mode=mode
-        )
+        prompt = self.prompt_manager.get_system_prompt(user_input=message)
+
         try:
             response_stream = self.client.generate(
                 model=self.model,
@@ -48,17 +41,9 @@ class OllamaProvider(LLMProvider):
         except ollama.ResponseError as e:
             raise ConnectionError(f"Failed to connect to Ollama server: {e}") from e
 
-    def chat(self, message: str, mode: str | None = None) -> str:
-        if mode is None and self.auto_detect_mode:
-            mode = self.prompt_manager.detect_response_type(message)
-        elif mode is None:
-            mode = self.default_mode
+    def chat(self, message: str) -> str:
 
-        prompt = self.prompt_manager.get_conversation_prompt(
-            user_message=message,
-            context=None,  # Context can be passed if available
-            mode=mode
-        )
+        prompt = self.prompt_manager.get_system_prompt(user_input=message)
 
         try:
             response = self.client.generate(
