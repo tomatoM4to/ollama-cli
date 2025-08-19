@@ -20,8 +20,8 @@ from typing import Any
 from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Container, ScrollableContainer, Vertical
-from textual.widgets import Header, Input, Label, Markdown, Button
+from textual.containers import Container, ScrollableContainer, Vertical, Horizontal
+from textual.widgets import Header, Input, Label, Markdown, Button, LoadingIndicator
 from textual.worker import Worker, WorkerState
 
 from ollama_cli.ui.bot import OllamaBot
@@ -29,98 +29,7 @@ from ollama_cli.ui.callbacks import TuiCallback
 from ollama_cli.ui.markdown_parser import preprocess_markdown
 from ollama_cli.ui.callbacks import ChatEvent
 from ollama_cli.settings.config import Config, ChatMode
-
-class ChatMessage(Vertical):
-    """
-    A custom widget for displaying chat messages with enhanced formatting and styling.
-
-    Each message shows:
-    - The sender's name with appropriate styling
-    - A formatted timestamp
-    - The message content with proper formatting (supports markdown)
-    - Different visual styles based on sender type
-
-    Args:
-        sender (str): Name of the message sender ('You', 'Bot', 'System', 'Error')
-        message (str): Content of the message
-        message_type (str): Type of message for styling ('user', 'bot', 'system', 'error', 'typing')
-        use_markdown (bool): Whether to render message as markdown (default: False for non-bot messages)
-    """
-
-    def __init__(self, sender: str, message: str, message_type: str = "bot", use_markdown: bool = False) -> None:
-        super().__init__()
-
-        # Determine if we should use markdown rendering
-        if not use_markdown:
-            # Use markdown for bot responses by default, plain text for others
-            use_markdown = (sender == "Bot" and message_type not in ["typing"])
-
-        # Format timestamp with better styling
-        current_time = datetime.now().strftime("%H:%M:%S")
-
-        # Create header with sender and timestamp
-        header_text = Text()
-
-        # Add sender name with appropriate styling
-        if sender == "You":
-            header_text.append("👤 ", style="bold cyan")
-            header_text.append(sender, style="bold bright_white")
-        elif sender == "Bot":
-            header_text.append("🤖 ", style="bold bright_cyan")
-            header_text.append(sender, style="bold bright_cyan")
-        elif sender == "System":
-            header_text.append("ℹ️  ", style="bold green")
-            header_text.append(sender, style="bold green")
-        elif sender == "Error":
-            header_text.append("❌ ", style="bold red")
-            header_text.append(sender, style="bold red")
-        elif sender == "Ollama CLI":
-            header_text.append("🤖 ", style="bold bold green")
-            header_text.append(sender, style="bold bold green")
-        else:
-            header_text.append(sender, style="bold")
-
-        # Add timestamp with subtle styling
-        header_text.append(f" • {current_time}", style="dim italic")
-
-        # Create header label
-        self.header_label = Label(header_text)
-
-        # Create content widget based on message type and markdown preference
-        if message_type == "typing":
-            content_text = Text()
-            content_text.append("💭 ", style="dim")
-            content_text.append(message, style="italic dim")
-            self.content_widget = Label(content_text)
-        elif use_markdown:
-            # Use markdown widget for bot responses
-            try:
-                processed_message = preprocess_markdown(message)
-                self.content_widget = Markdown(message)
-            except Exception:
-                # Fallback to plain text if markdown parsing fails
-                self.content_widget = Label(message)
-        else:
-            # Use plain text for user messages and simple responses
-            self.content_widget = Label(message)
-
-        # Add CSS classes for styling
-        if sender == "You":
-            self.add_class("user-message")
-        elif sender == "Bot":
-            self.add_class("bot-message")
-        elif sender == "System":
-            self.add_class("welcome-message")
-        elif sender == "Error":
-            self.add_class("error-message")
-
-        if message_type == "typing":
-            self.add_class("typing-indicator")
-
-    def compose(self) -> ComposeResult:
-        """Compose the message widget with header and content."""
-        yield self.header_label
-        yield self.content_widget
+from ollama_cli.ui.chat_message import ChatMessage, ChatType
 
 class ChatInterface(App):
     """
@@ -191,7 +100,7 @@ class ChatInterface(App):
         message_container = self.query_one("#message-container")
 
         # Add TUI callback to handle bot events and update the interface
-        tui_callback = TuiCallback(self, message_container, ChatMessage)
+        tui_callback = TuiCallback(self, message_container, config=self.config)
         self.bot.add_callback(tui_callback)
 
         # Set up file logging for events
@@ -215,7 +124,13 @@ class ChatInterface(App):
             with ScrollableContainer(id="message-container"):
                 # Display enhanced welcome message
                 welcome_msg = "Welcome to the AI Chat Interface!\n\nI'm here to help you with any questions or tasks.\nType your message below and press Enter to start chatting!"
-                yield ChatMessage("Ollama CLI", welcome_msg, "system")
+                yield ChatMessage(
+                    sender=ChatType.SYSTEM,
+                    message=welcome_msg,
+                    model=self.config.model,
+                    message_type='system'
+                )
+                # yield ChatMessage("Ollama CLI", welcome_msg, "system", self.config.model)
         with Container(id="input-container"):
             yield Input(
                 placeholder="Type your message here and press Enter to chat...",
@@ -248,15 +163,63 @@ class ChatInterface(App):
 
         if event.worker.name in ["bot_processing", "bot_streaming"]:
             if event.worker.state == WorkerState.SUCCESS:
-                # For streaming, we don't need to add the final response since it's already been streamed
-                # For non-streaming, we still add the complete response
                 if event.worker.name == "bot_processing":
-                    result: Any = event.worker.result
-                    message_container.mount(ChatMessage("Bot", result, "bot"))
+                    # Get result from worker
+                    worker_result = event.worker.result
+
+                    if isinstance(worker_result, tuple) and len(worker_result) == 2:
+                        result, thinking_indicator = worker_result
+
+                        # Remove the thinking indicator
+                        try:
+                            message_container.remove_children([thinking_indicator])
+                        except:
+                            # If indicator removal fails, find and remove typing indicators
+                            for child in message_container.children:
+                                if hasattr(child, 'classes') and 'typing-indicator' in child.classes:
+                                    message_container.remove_children([child])
+                                    break
+
+                        # Add the actual bot response
+                        message_container.mount(ChatMessage(
+                            sender=ChatType.AI,
+                            message=result,
+                            model=self.config.model,
+                        ))
+                        # message_container.mount(ChatMessage("Bot", result, "bot"))
+                    else:
+                        # Fallback: just add the result as is
+                        message_container.mount(ChatMessage(
+                            sender=ChatType.AI,
+                            message=str(worker_result),
+                            model=self.config.model
+                        ))
+                        # message_container.mount(ChatMessage("Bot", str(worker_result), "bot"))
+
+                    message_container.scroll_end(animate=False)
+
+                elif event.worker.name == "bot_streaming":
+                    # For streaming, responses are already displayed via callbacks
+                    # Just ensure we scroll to the end
                     message_container.scroll_end(animate=False)
             elif event.worker.state == WorkerState.ERROR:
+                # Try to remove thinking indicator if it exists
+                try:
+                    # Find and remove any typing indicators
+                    for child in message_container.children:
+                        if hasattr(child, 'classes') and 'typing-indicator' in child.classes:
+                            message_container.remove_children([child])
+                            break
+                except:
+                    pass
+
                 error_message = "⚠️ Oops! Something went wrong while processing your message.\n🔄 Please try again or rephrase your question."
-                message_container.mount(ChatMessage("Error", error_message, "error"))
+                message_container.mount(ChatMessage(
+                    sender=ChatType.ERROR,
+                    message=error_message,
+                    model=self.config.model
+                ))
+                # message_container.mount(ChatMessage("Error", error_message, "error"))
                 message_container.scroll_end(animate=False)
 
 
@@ -270,12 +233,35 @@ class ChatInterface(App):
             Worker: A background worker processing the message
         """
         message_container = self.query_one("#message-container")
-        message_container.mount(ChatMessage("You", user_input, "user"))
+        message_container.mount(ChatMessage(
+            sender=ChatType.USER,
+            message=user_input,
+            model=self.config.model
+        ))
+        # message_container.mount(ChatMessage("You", user_input, "user"))
+
+        # Add thinking indicator immediately
+        thinking_indicator = ChatMessage(
+            sender=ChatType.AI,
+            message="AI 연산중...",
+            model=self.config.model,
+            message_type='typing'
+        )
+        # thinking_indicator = ChatMessage("Bot", "AI 연산중...", "typing")
+        message_container.mount(thinking_indicator)
         message_container.scroll_end(animate=False)
+
+        def process_with_indicator():
+            """Process message and return both result and thinking indicator for cleanup."""
+            try:
+                result = self.bot.process_message(user_input)
+                return result, thinking_indicator
+            except Exception as e:
+                return f"⚠️ 오류가 발생했습니다: {str(e)}", thinking_indicator
 
         # Create worker for background processing
         worker = self.run_worker(
-            lambda: self.bot.process_message(user_input),
+            process_with_indicator,
             name="bot_processing",  # Important for identifying our worker
             thread=True
         )
@@ -291,12 +277,13 @@ class ChatInterface(App):
             Worker: A background worker processing the streaming message
         """
         message_container = self.query_one("#message-container")
-        message_container.mount(ChatMessage("You", user_input, "user"))
-
-        # Add typing indicator
-        # typing_indicator = ChatMessage("Bot", "Thinking...", "typing")
-        # message_container.mount(typing_indicator)
-        # message_container.scroll_end(animate=False)
+        # message_container.mount(ChatMessage("You", user_input, "user"))
+        message_container.mount(ChatMessage(
+            sender=ChatType.USER,
+            message=user_input,
+            model=self.config.model
+        ))
+        message_container.scroll_end(animate=False)
 
         def stream_processing():
             """Handle streaming message processing with enhanced error handling."""
@@ -311,14 +298,11 @@ class ChatInterface(App):
                     # Notify each chunk
                     self.bot.notify_callbacks(ChatEvent.STREAM_CHUNK, chunk)
 
-                # Remove typing indicator and notify end of streaming
-                # message_container.remove_children([typing_indicator])
+                # Notify end of streaming
                 self.bot.notify_callbacks(ChatEvent.STREAM_END, "")
                 return ''.join(response_parts)
 
             except Exception as e:
-                # Remove typing indicator on error
-                # message_container.remove_children([typing_indicator])
                 error_message = f"🔌 Connection issue: {str(e)}\n💡 Please check your connection and try again."
                 self.bot.notify_callbacks(ChatEvent.ERROR, error_message)
                 return "⚠️ I encountered a technical difficulty. Please try your request again."
@@ -379,4 +363,9 @@ class ChatInterface(App):
 
             # Add welcome message back
             welcome_msg = "Welcome to the AI Chat Interface!\n\nI'm here to help you with any questions or tasks.\nType your message below and press Enter to start chatting!"
-            message_container.mount(ChatMessage("Ollama CLI", welcome_msg, "system"))
+            # message_container.mount(ChatMessage("Ollama CLI", welcome_msg, "system"))
+            message_container.mount(ChatMessage(
+                sender=ChatType.SYSTEM,
+                message=welcome_msg,
+                model=self.config.model
+            ))

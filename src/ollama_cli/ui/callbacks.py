@@ -4,6 +4,9 @@ from enum import Enum
 
 from textual.app import App
 from ollama_cli.ui.markdown_parser import preprocess_markdown
+from ollama_cli.ui.chat_message import ChatMessage, ChatType
+from ollama_cli.settings.config import Config
+
 
 class ChatEvent(Enum):
     WORKFLOW = "workflow"
@@ -46,31 +49,58 @@ class FileLogCallback(ChatCallback):
 class TuiCallback(ChatCallback):
     """Callback that updates the TUI interface."""
 
-    def __init__(self, app: App, message_container, create_message_func) -> None:
+    def __init__(self, app: App, message_container, config: Config) -> None:
         self.app = app
         self.message_container = message_container
-        self.create_message = create_message_func
+        # self.create_message = create_message_func
+        self.config = config
         self.current_bot_message = None  # Track current streaming message
         self.current_content = ""  # Track streaming content separately
 
     def on_event(self, event: ChatEvent, message: str) -> None:
         def update_ui() -> None:
             if event == ChatEvent.WORKFLOW:
-                processing_msg = self.create_message("Bot", message, "system")
+                processing_msg = ChatMessage(
+                    ChatType.AI,
+                    f"💭 {message}",
+                    model=self.config.model,
+                )
+                # processing_msg = self.create_message("Bot", message, "system")
                 self.message_container.mount(processing_msg)
             elif event == ChatEvent.THINKING:
-                thinking_msg = self.create_message("Bot", f"💭 {message}", "typing")
+                thinking_msg = ChatMessage(
+                    ChatType.AI,
+                    f"💭 {message}",
+                    model=self.config.model,
+                    message_type='typing'
+                )
+                # thinking_msg = self.create_message("Bot", f"💭 {message}", "typing")
                 self.message_container.mount(thinking_msg)
             elif event == ChatEvent.ERROR:
-                error_msg = self.create_message("Error", f"❌ {message}", "error")
+                error_msg = ChatMessage(
+                    ChatType.ERROR,
+                    f"❌ {message}",
+                    model=self.config.model,
+                )
+                # error_msg = self.create_message("Error", f"❌ {message}", "error")
                 self.message_container.mount(error_msg)
             elif event == ChatEvent.PROCESSING_COMPLETE:
-                complete_msg = self.create_message("System", "✅ Response complete", "system")
+                complete_msg = ChatMessage(
+                    ChatType.SYSTEM,
+                    "✅ Response complete",
+                    model=self.config.model,
+                )
+                # complete_msg = self.create_message("System", "✅ Response complete", "system")
                 self.message_container.mount(complete_msg)
             elif event == ChatEvent.STREAM_START:
                 # Create a new bot message for streaming
                 self.current_content = ""  # Reset content
-                self.current_bot_message = self.create_message("Bot", "", "bot")
+                self.current_bot_message = ChatMessage(
+                    ChatType.AI,
+                    "",
+                    model=self.config.model,
+                )
+                # self.current_bot_message = self.create_message("Bot", "", "bot")
                 self.message_container.mount(self.current_bot_message)
             elif event == ChatEvent.STREAM_CHUNK:
                 # Update the current bot message with new content

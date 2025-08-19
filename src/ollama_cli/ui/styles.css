@@ -202,9 +202,18 @@ ChatMessage.error-message {
 /* ===== 타이핑 인디케이터 스타일 ===== */
 ChatMessage.typing-indicator {
     background: #30363d;
-    border-left: solid #7d8590;
+    border-left: solid #58a6ff;
     color: #8b949e;
     margin: 1 2;
+    opacity: 0.8;
+}
+
+/* ===== 로딩 인디케이터 스타일 ===== */
+.typing-loading {
+    width: 100%;
+    height: 2;
+    margin: 1;
+    background: transparent;
 }
 
 /* ===== 스크롤바 스타일링 ===== */
