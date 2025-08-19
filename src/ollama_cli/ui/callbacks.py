@@ -6,7 +6,7 @@ from textual.app import App
 
 
 class ChatEvent(Enum):
-    START_PROCESSING = "start_processing"
+    WORKFLOW = "workflow"
     THINKING = "thinking"
     PROCESSING_COMPLETE = "processing_complete"
     ERROR = "error"
@@ -55,8 +55,8 @@ class TuiCallback(ChatCallback):
 
     def on_event(self, event: ChatEvent, message: str) -> None:
         def update_ui() -> None:
-            if event == ChatEvent.START_PROCESSING:
-                processing_msg = self.create_message("System", "🤔 Processing your message...", "system")
+            if event == ChatEvent.WORKFLOW:
+                processing_msg = self.create_message("Bot", message, "system")
                 self.message_container.mount(processing_msg)
             elif event == ChatEvent.THINKING:
                 thinking_msg = self.create_message("Bot", f"💭 {message}", "typing")

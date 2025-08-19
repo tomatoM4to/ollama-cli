@@ -29,16 +29,8 @@ class OllamaBot:
 
     def process_message(self, message: str) -> str:
         try:
-            self.notify_callbacks(ChatEvent.START_PROCESSING, "Starting to process message with Ollama")
-
-            response_parts = []
-            for chunk in self.provider.chat_stream(message):
-                if chunk.strip():
-                    response_parts.append(chunk)
-
-            complete_response = ''.join(response_parts)
-            self.notify_callbacks(ChatEvent.PROCESSING_COMPLETE, "Response generation complete")
-            return complete_response
+            response = self.provider.chat(message)
+            return response
 
         except Exception as e:
             error_message = f"Ollama error occurred: {str(e)}"

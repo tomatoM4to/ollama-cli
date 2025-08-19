@@ -47,3 +47,35 @@ class OllamaProvider(LLMProvider):
             raise ConnectionError(f"Invalid request to Ollama server: {e}") from e
         except ollama.ResponseError as e:
             raise ConnectionError(f"Failed to connect to Ollama server: {e}") from e
+
+    def chat(self, message: str, mode: str | None = None) -> str:
+        if mode is None and self.auto_detect_mode:
+            mode = self.prompt_manager.detect_response_type(message)
+        elif mode is None:
+            mode = self.default_mode
+
+        prompt = self.prompt_manager.get_conversation_prompt(
+            user_message=message,
+            context=None,  # Context can be passed if available
+            mode=mode
+        )
+
+        try:
+            response = self.client.generate(
+                model=self.model,
+                prompt=prompt,
+                stream=False,  # Disable streaming for complete response
+                think=False,   # Disable thinking time
+            )
+
+            # Extract the response text from the response object
+            if hasattr(response, 'response'):
+                return response.response
+            else:
+                # Fallback in case the response structure is different
+                return str(response)
+
+        except ollama.RequestError as e:
+            raise ConnectionError(f"Invalid request to Ollama server: {e}") from e
+        except ollama.ResponseError as e:
+            raise ConnectionError(f"Failed to connect to Ollama server: {e}") from e

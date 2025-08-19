@@ -27,7 +27,7 @@ from textual.worker import Worker, WorkerState
 from ollama_cli.ui.bot import OllamaBot
 from ollama_cli.ui.callbacks import TuiCallback
 from ollama_cli.ui.markdown_parser import preprocess_markdown
-
+from ollama_cli.ui.callbacks import ChatEvent
 
 class ChatMessage(Vertical):
     """
@@ -74,8 +74,8 @@ class ChatMessage(Vertical):
             header_text.append("❌ ", style="bold red")
             header_text.append(sender, style="bold red")
         elif sender == "Ollama CLI":
-            header_text.append("🤖 ", style="bold bright_cyan")
-            header_text.append(sender, style="bold bright_cyan")
+            header_text.append("🤖 ", style="bold bold green")
+            header_text.append(sender, style="bold bold green")
         else:
             header_text.append(sender, style="bold")
 
@@ -318,9 +318,6 @@ class ChatInterface(App):
                 self.bot.notify_callbacks(ChatEvent.ERROR, error_message)
                 return "⚠️ I encountered a technical difficulty. Please try your request again."
 
-        # Import ChatEvent here to avoid circular imports
-        from ollama_cli.ui.callbacks import ChatEvent
-
         # Create worker for background streaming processing
         worker = self.run_worker(
             stream_processing,
@@ -344,6 +341,8 @@ class ChatInterface(App):
         # Clear input field after submission
         input_widget = self.query_one("#user-input", Input)
         input_widget.value = ""
+        self.process_message_in_background(user_input)
+        return
 
         # Process message with streaming asynchronously
         self.process_message_stream_in_background(user_input)
