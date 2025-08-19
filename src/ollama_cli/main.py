@@ -4,12 +4,8 @@ from rich.console import Console
 from rich.panel import Panel
 
 from ollama_cli.settings.ai_setup import OllamaSetup, select_from_menu
-from ollama_cli.settings.settings import Settings, load_user_settings
 from ollama_cli.ui.app import ChatInterface
-from provider.anthropic import AnthropicProvider
-from provider.ollama import OllamaProvider
-from provider.openai import OpenAIProvider
-from provider.provider import MultiLLMClient
+from ollama_cli.settings.config import Config
 
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
@@ -81,21 +77,6 @@ def main():
         console.print(error_panel)
         return
 
-    user_settings: Settings | None = load_user_settings()
-
-    if user_settings is None:
-        return
-
-    client = MultiLLMClient()
-
-    if OPENAI_API_KEY:
-        client.add_provider("openai", OpenAIProvider(OPENAI_API_KEY))
-
-    if ANTHROPIC_API_KEY:
-        client.add_provider("anthropic", AnthropicProvider(ANTHROPIC_API_KEY))
-
-    client.add_provider("ollama", OllamaProvider(model=selected_model))
-
     # 채팅 시작 안내
     ready_panel = Panel(
         f"[bold bright_magenta]✨ 모든 설정이 완료되었습니다![/bold bright_magenta]\n[bright_white]모델: {selected_model}[/bright_white]\n[dim]채팅을 시작합니다...[/dim]",
@@ -104,7 +85,12 @@ def main():
     )
     console.print(ready_panel)
 
-    app = ChatInterface(selected_model)
+    config = Config(
+        platform='Ollama',
+        model=selected_model
+    )
+
+    app = ChatInterface(config)
     app.run()
 
 if __name__ == "__main__":

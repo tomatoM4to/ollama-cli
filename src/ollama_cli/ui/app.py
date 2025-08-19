@@ -28,6 +28,7 @@ from ollama_cli.ui.bot import OllamaBot
 from ollama_cli.ui.callbacks import TuiCallback
 from ollama_cli.ui.markdown_parser import preprocess_markdown
 from ollama_cli.ui.callbacks import ChatEvent
+from ollama_cli.settings.config import Config
 
 class ChatMessage(Vertical):
     """
@@ -95,7 +96,7 @@ class ChatMessage(Vertical):
             # Use markdown widget for bot responses
             try:
                 processed_message = preprocess_markdown(message)
-                self.content_widget = Markdown(processed_message)
+                self.content_widget = Markdown(message)
             except Exception:
                 # Fallback to plain text if markdown parsing fails
                 self.content_widget = Label(message)
@@ -144,13 +145,12 @@ class ChatInterface(App):
         Binding("ctrl+c", "quit", "Quit", show=False),
     ]
 
-    def __init__(self, model: str) -> None:
+    def __init__(self, config: Config) -> None:
         """Initialize the chat interface with an OllamaBot instance."""
         super().__init__()
         # Use OllamaBot instead of SimpleBot for streaming responses
-        self.bot = OllamaBot(model=model)
-        # Fallback to SimpleBot if Ollama is not available
-        # self.bot = SimpleBot()
+        self.bot = OllamaBot(config=config)
+        self.config = config
 
     def on_mount(self) -> None:
         """
@@ -341,8 +341,9 @@ class ChatInterface(App):
         # Clear input field after submission
         input_widget = self.query_one("#user-input", Input)
         input_widget.value = ""
-        self.process_message_in_background(user_input)
-        return
 
-        # Process message with streaming asynchronously
-        self.process_message_stream_in_background(user_input)
+        if self.config.get_stream():
+            self.process_message_stream_in_background(user_input)
+            return
+
+        self.process_message_in_background(user_input)
