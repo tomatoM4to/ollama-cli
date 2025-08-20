@@ -201,16 +201,57 @@ class ChatInterface(App):
 
                     message_container.scroll_end(animate=False)
 
-                    # Check if we should continue processing
-                    # Only repeat if stream is OFF and chat mode is AGENT (ask: off)
+                    # Check if we should continue processing or execute workflows
                     if not self.config.get_stream() and self.config.get_chat_mode() == ChatMode.AGENT:
-                        self.current_iteration += 1
-                        if self.current_iteration < self.max_iterations:
-                            # Show continue message with current step
-                            self.show_continue_message()
-                        else:
+                        # Check if we just completed Writer - if so, execute writer workflow automatically
+                        if (self.current_iteration == 2 and  # Just completed Writer (index 2)
+                            self.agent_steps[self.current_iteration] == AgentMode.WRITER and
+                            hasattr(self.config, 'writer_result') and
+                            self.config.writer_result.strip()):
+
+                            try:
+                                # Execute the writer workflow (write files)
+                                writer_workflow_result = self.config.execute_writer_workflow()
+
+                                # Display the writer workflow result
+                                message_container.mount(ChatMessage(
+                                    sender=ChatType.SYSTEM,
+                                    message=f"✍️ Writer Workflow Executed:\n\n{writer_workflow_result}",
+                                    model=self.config.get_model(),
+                                    message_type='system'
+                                ))
+                                message_container.scroll_end(animate=False)
+
+                                # Show completion message
+                                message_container.mount(ChatMessage(
+                                    sender=ChatType.SYSTEM,
+                                    message="🎉 All agent workflows completed successfully!",
+                                    model=self.config.get_model(),
+                                    message_type='system'
+                                ))
+                                message_container.scroll_end(animate=False)
+
+                            except Exception as e:
+                                # Display error if writer workflow fails
+                                message_container.mount(ChatMessage(
+                                    sender=ChatType.ERROR,
+                                    message=f"❌ Writer workflow failed: {str(e)}",
+                                    model=self.config.get_model(),
+                                    message_type='error'
+                                ))
+                                message_container.scroll_end(animate=False)
+
                             # Reset for next user input
                             self.reset_continuous_processing()
+                        else:
+                            # Continue with normal flow
+                            self.current_iteration += 1
+                            if self.current_iteration < self.max_iterations:
+                                # Show continue message with current step
+                                self.show_continue_message()
+                            else:
+                                # Reset for next user input
+                                self.reset_continuous_processing()
                     else:
                         # For other cases, just reset without continuing
                         self.reset_continuous_processing()
@@ -478,6 +519,8 @@ class ChatInterface(App):
 
         # Check if user wants to continue
         if response in ['y', 'yes', '예', '네', ''] or response == '':  # Default to yes
+            message_container = self.query_one("#message-container")
+
             # Execute planning workflow if we just completed planning step
             if (self.config.get_chat_mode() == ChatMode.AGENT and
                 self.current_iteration == 1 and  # Just completed planning (moving to READER)
@@ -491,7 +534,6 @@ class ChatInterface(App):
                     workflow_result = self.config.execute_planning_workflow()
 
                     # Display the workflow result
-                    message_container = self.query_one("#message-container")
                     message_container.mount(ChatMessage(
                         sender=ChatType.SYSTEM,
                         message=f"🔧 Planning Workflow Executed:\n\n{workflow_result}",
@@ -500,12 +542,73 @@ class ChatInterface(App):
                     ))
                     message_container.scroll_end(animate=False)
 
+                    # Auto-execute Reader and Writer without user intervention
+                    # Reader doesn't need AI - just prepares context
+                    message_container.mount(ChatMessage(
+                        sender=ChatType.SYSTEM,
+                        message="📚 Reader Agent: Context prepared for Writer",
+                        model=self.config.get_model(),
+                        message_type='system'
+                    ))
+                    message_container.scroll_end(animate=False)
+
+                    # Jump to Writer step (skip Reader iteration)
+                    self.current_iteration = 2  # Move to Writer
+
+                    # Execute Writer automatically
+                    current_agent_mode = self.agent_steps[self.current_iteration]
+                    message_container.mount(ChatMessage(
+                        sender=ChatType.SYSTEM,
+                        message="✍️ Starting Writer Agent...",
+                        model=self.config.get_model(),
+                        message_type='system'
+                    ))
+                    message_container.scroll_end(animate=False)
+
+                    # Process Writer in background
+                    if self.config.get_stream():
+                        self.process_message_stream_in_background(self.current_user_input, show_user_message=False)
+                    else:
+                        self.process_message_in_background(self.current_user_input, show_user_message=False, agent_mode=current_agent_mode)
+
                 except Exception as e:
                     # Display error if workflow fails
-                    message_container = self.query_one("#message-container")
                     message_container.mount(ChatMessage(
                         sender=ChatType.ERROR,
                         message=f"❌ Planning workflow failed: {str(e)}",
+                        model=self.config.get_model(),
+                        message_type='error'
+                    ))
+                    message_container.scroll_end(animate=False)
+
+                return False  # Don't continue the normal flow
+
+            # Execute writer workflow if we just completed writer step
+            elif (self.config.get_chat_mode() == ChatMode.AGENT and
+                  self.current_iteration == 3 and  # Just completed writer (Writer was at index 2, now moving to REVIEWER at 3)
+                  len(self.agent_steps) > self.current_iteration and
+                  self.agent_steps[self.current_iteration] == AgentMode.REVIEWER and
+                  hasattr(self.config, 'writer_result') and
+                  self.config.writer_result.strip()):
+
+                try:
+                    # Execute the writer workflow (write files)
+                    writer_workflow_result = self.config.execute_writer_workflow()
+
+                    # Display the writer workflow result
+                    message_container.mount(ChatMessage(
+                        sender=ChatType.SYSTEM,
+                        message=f"✍️ Writer Workflow Executed:\n\n{writer_workflow_result}",
+                        model=self.config.get_model(),
+                        message_type='system'
+                    ))
+                    message_container.scroll_end(animate=False)
+
+                except Exception as e:
+                    # Display error if writer workflow fails
+                    message_container.mount(ChatMessage(
+                        sender=ChatType.ERROR,
+                        message=f"❌ Writer workflow failed: {str(e)}",
                         model=self.config.get_model(),
                         message_type='error'
                     ))

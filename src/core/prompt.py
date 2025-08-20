@@ -15,6 +15,8 @@ class PromptManager:
         self.ask_prompt = self._load_ask_prompt()
         self.planning_prompt = self._load_planning_prompt()
         self.reading_prompt = self._reading_prompt()
+        self.writing_prompt = self._load_writing_prompt()
+
 
     def _load_system_prompt(self) -> str:
         default_prompts = """
@@ -179,15 +181,30 @@ Analyze the provided workspace and directory structure to create an execution pl
 - Verify dependencies exist
 - Always use absolute paths for file operations
 
-**Output Format:** Respond ONLY in valid JSON:
+**CRITICAL: JSON FORMAT REQUIREMENTS**
+- You MUST respond with ONLY valid JSON
+- No markdown code blocks (```json)
+- No additional text before or after JSON
+- No comments inside JSON
+- Use double quotes for all strings
+- Escape backslashes properly in paths (use \\\\ for Windows paths)
+- Validate JSON before responding
+
+**Output Format:** Respond ONLY in valid JSON (no ```json blocks):
 
 {
     "analysis": "Brief workspace analysis",
     "files_to_read": ["/absolute/path/to/file.ext"],
     "files_to_create": ["/absolute/path/to/new_file.ext"],
     "files_to_modify": ["/absolute/path/to/existing_file.ext"],
-    "dependencies_required": ["package-name@version"],
+    "dependencies_required": ["package-name@version"]
 }
+
+**IMPORTANT REMINDERS:**
+- Start your response directly with { (opening brace)
+- End your response with } (closing brace)
+- No extra text, no markdown, no explanations
+- Double-check JSON syntax before responding
 """
         return default_prompt
 
@@ -200,5 +217,92 @@ Analyze the provided workspace and directory structure to create an execution pl
         default_prompt = """
 ## Reading
 
+"""
+        return default_prompt
+
+    def _load_writing_prompt(self) -> str:
+        default_prompt = """
+## Writer
+Generate code based on the planning output and file context. Write code that seamlessly integrates with the existing codebase.
+
+**Writing Tasks:**
+1. Follow existing code patterns and conventions
+2. Maintain consistent styling and naming
+3. Preserve architectural decisions
+4. Handle edge cases and error conditions
+
+**Code Quality Rules:**
+- Match existing indentation and formatting
+- Use same import patterns and organization
+- Follow established naming conventions
+- Add appropriate comments where needed
+- Handle errors gracefully
+
+**CRITICAL: JSON FORMAT REQUIREMENTS**
+- You MUST respond with ONLY valid JSON
+- No markdown code blocks (```json)
+- No additional text before or after JSON
+- No comments inside JSON
+- Use double quotes for all strings
+- Escape backslashes properly in paths (use \\\\ for Windows paths)
+- Validate JSON before responding
+
+**CRITICAL: FILE CONTENT FORMATTING RULES**
+When writing file content in the JSON "content" field:
+1. **Escape ALL special characters properly:**
+   - Newlines: Use \\n (not actual line breaks)
+   - Double quotes: Use \\"
+   - Backslashes: Use \\\\
+   - Tabs: Use \\t
+
+2. **File content must be a single JSON string:**
+   - NO actual line breaks in the JSON
+   - NO unescaped quotes
+   - Content should be one continuous string with \\n for line breaks
+
+3. **Example of CORRECT formatting:**
+   ```
+   "content": "#!/usr/bin/env python3\\n\\ndef hello_world():\\n    print(\\"Hello, World!\\")\\n\\nif __name__ == \\"__main__\\":\\n    hello_world()\\n"
+   ```
+
+4. **Example of WRONG formatting (DO NOT DO THIS):**
+   ```
+   "content": "#!/usr/bin/env python3
+
+   def hello_world():
+       print("Hello, World!")
+
+   if __name__ == "__main__":
+       hello_world()
+   "
+   ```
+
+**Output Format:** Respond ONLY in valid JSON (no ```json blocks):
+
+{
+    "files": [
+        {
+            "path": "/absolute/path/to/file.ext",
+            "action": "create|modify|delete",
+            "content": "properly escaped file content with \\n for newlines and \\" for quotes"
+        }
+    ],
+    "summary": "concise description of what was implemented"
+}
+
+**FINAL VALIDATION CHECKLIST:**
+- [ ] Response starts with { and ends with }
+- [ ] All file content uses \\n for newlines
+- [ ] All quotes in content are escaped as \\"
+- [ ] No actual line breaks inside JSON strings
+- [ ] Valid JSON syntax throughout
+- [ ] No markdown code blocks or extra text
+
+**IMPORTANT REMINDERS:**
+- Start your response directly with { (opening brace)
+- End your response with } (closing brace)
+- File content MUST be properly escaped as a single JSON string
+- Use \\n for ALL line breaks in file content
+- Escape ALL quotes in file content as \\"
 """
         return default_prompt
