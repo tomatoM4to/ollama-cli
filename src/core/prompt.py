@@ -10,8 +10,11 @@ class ResponseFormat(Enum):
 
 class PromptManager:
     def __init__(self):
+        self.agent_prompt: str = ""
         self.system_prompt = self._load_system_prompt()
         self.ask_prompt = self._load_ask_prompt()
+        self.planning_prompt = self._load_planning_prompt()
+
     def _load_system_prompt(self) -> str:
         default_prompts = """
 # Your Role
@@ -150,8 +153,40 @@ A: 답변
 
     def get_system_prompt(self, user_input: str, mode: str = 'system_base') -> str:
         prompt: str = self.system_prompt
-        prompt += f"\n\nUser Input: {user_input}"
+        prompt += f"""
+
+User Input : {user_input}
+
+"""
         return prompt
+
+    def _load_planning_prompt(self) -> str:
+        default_prompt = """
+Analyze the provided workspace and directory structure to create an execution plan for the user's request.
+
+**Key Planning Tasks:**
+1. Identify files to read for context
+2. Determine files to create or modify
+3. Check for required dependencies
+
+**Planning Rules:**
+- Read existing files before making changes
+- Use absolute paths only
+- Maintain project conventions
+- Verify dependencies exist
+- Always use absolute paths for file operations
+
+**Output Format:** Respond ONLY in valid JSON:
+
+{
+    "analysis": "Brief workspace analysis",
+    "files_to_read": ["/absolute/path/to/file.ext"],
+    "files_to_create": ["/absolute/path/to/new_file.ext"],
+    "files_to_modify": ["/absolute/path/to/existing_file.ext"],
+    "dependencies_required": ["package-name@version"],
+}
+"""
+        return default_prompt
 
     def get_ask_prompt(self, user_input: str) -> str:
         prompt: str = self.ask_prompt

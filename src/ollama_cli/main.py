@@ -7,8 +7,8 @@ from ollama_cli.settings.ai_setup import OllamaSetup, select_from_menu
 from core.config import Config
 from ollama_cli.ui.app import ChatInterface
 
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
+# OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+# ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
 
 
 def main():
