@@ -21,7 +21,7 @@ from textual.containers import Container, ScrollableContainer
 from textual.widgets import Button, Header, Input
 from textual.worker import Worker, WorkerState
 
-from core.config import ChatMode, Config, AgentMode
+from core.config import AgentMode, ChatMode, Config
 from ollama_cli.ui.bot import OllamaBot
 from ollama_cli.ui.callbacks import ChatEvent, TuiCallback
 from ollama_cli.ui.chat_message import ChatMessage, ChatType

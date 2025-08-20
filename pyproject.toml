@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [project.scripts]
-cli = "ollama_cli.main:main"
+ocli = "ollama_cli.main:main"
 
 [dependency-groups]
 dev = ["ruff>=0.12.9"]

@@ -2,7 +2,6 @@ from collections.abc import Iterator
 
 import ollama
 
-from core.prompt import PromptManager
 from provider.provider import LLMProvider
 
 

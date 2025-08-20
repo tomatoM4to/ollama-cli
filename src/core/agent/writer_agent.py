@@ -1,6 +1,5 @@
-import json
 from pathlib import Path
-from typing import TypedDict, List, Literal, Dict, Tuple, Optional
+from typing import Literal, TypedDict
 
 
 class FileDict(TypedDict):
@@ -10,12 +9,12 @@ class FileDict(TypedDict):
 
 
 class ResponseDict(TypedDict):
-    files: List[FileDict]
+    files: list[FileDict]
     summary: str
 
 
 class WriterAgent:
-    def __init__(self, work_dir: Optional[Path] = None, strict_security: bool = True):
+    def __init__(self, work_dir: Path | None = None, strict_security: bool = True):
         self.work_dir = work_dir
         self.strict_security = strict_security  # 보안 모드 활성화
 
@@ -27,7 +26,7 @@ class WriterAgent:
         """보안 모드를 설정합니다."""
         self.strict_security = strict
 
-    def _validate_file_path_security(self, file_path: str) -> Tuple[bool, str]:
+    def _validate_file_path_security(self, file_path: str) -> tuple[bool, str]:
         """
         파일 경로의 보안을 검증하는 메서드
 
@@ -169,7 +168,7 @@ class WriterAgent:
 
         return True
 
-    def write_file_safely(self, file_path: str, content: str, action: str = "create") -> Tuple[bool, str]:
+    def write_file_safely(self, file_path: str, content: str, action: str = "create") -> tuple[bool, str]:
         """
         파일을 안전하게 작성하는 메서드
 
@@ -223,7 +222,7 @@ class WriterAgent:
         except Exception as e:
             return False, f"Error writing file {file_path}: {str(e)}"
 
-    def execute_writer_result(self, writer_data: Dict) -> str:
+    def execute_writer_result(self, writer_data: dict) -> str:
         """
         Writer 결과를 실행하여 파일들을 작성
 
@@ -283,7 +282,7 @@ class WriterAgent:
         markdown += "## 📄 File Operations\n"
 
         if files:
-            for i, file_obj in enumerate(files, 1):
+            for _i, file_obj in enumerate(files, 1):
                 path = file_obj.get('path', 'Unknown path')
                 action = file_obj.get('action', 'unknown')
                 content = file_obj.get('content', '')

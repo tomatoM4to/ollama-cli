@@ -1,7 +1,7 @@
-from pathlib import Path
 import fnmatch
-from shutil import ignore_patterns
+from pathlib import Path
 from typing import TypedDict
+
 
 class PlanningResult(TypedDict):
     analysis: str
@@ -11,7 +11,7 @@ class PlanningResult(TypedDict):
     dependencies_required: list[str]
 
 
-class PlanningAgent():
+class PlanningAgent:
     def get_directory_structure(self, path='.', custom_ignores=None):
         # 기본 ignore 패턴들
         ignore_patterns = [

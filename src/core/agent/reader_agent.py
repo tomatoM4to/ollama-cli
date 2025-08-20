@@ -1,10 +1,8 @@
-import json
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional
 
 
 class ReaderAgent:
-    def __init__(self, work_dir: Optional[Path] = None):
+    def __init__(self, work_dir: Path | None = None):
         self.work_dir = work_dir
 
     def set_work_dir(self, work_dir: Path) -> None:
@@ -13,10 +11,10 @@ class ReaderAgent:
 
     def read_file(self, file_path: str) -> str:
         """파일을 읽는 기본 메서드 (호환성 유지)"""
-        with open(file_path, 'r', encoding='utf-8') as file:
+        with open(file_path, encoding='utf-8') as file:
             return file.read()
 
-    def read_file_safely(self, file_path: str) -> Tuple[bool, str]:
+    def read_file_safely(self, file_path: str) -> tuple[bool, str]:
         """
         파일을 안전하게 읽는 메서드
 
@@ -40,7 +38,7 @@ class ReaderAgent:
             if not full_path.is_file():
                 return False, f"Path is not a file: {file_path}"
 
-            with open(full_path, 'r', encoding='utf-8') as f:
+            with open(full_path, encoding='utf-8') as f:
                 content = f.read()
 
             return True, content
@@ -52,7 +50,7 @@ class ReaderAgent:
         except Exception as e:
             return False, f"Error reading file {file_path}: {str(e)}"
 
-    def create_file_safely(self, file_path: str, content: str = "") -> Tuple[bool, str]:
+    def create_file_safely(self, file_path: str, content: str = "") -> tuple[bool, str]:
         """
         파일을 안전하게 생성하는 메서드
 
@@ -88,7 +86,7 @@ class ReaderAgent:
         except Exception as e:
             return False, f"Error creating file {file_path}: {str(e)}"
 
-    def read_planning_files(self, planning_data: Dict) -> str:
+    def read_planning_files(self, planning_data: dict) -> str:
         """
         Planning 결과에서 읽어야 할 파일들을 읽고 프롬프트 형식으로 반환
 
@@ -118,7 +116,7 @@ class ReaderAgent:
         header = f"📖 Read {successful_reads}/{len(files_to_read)} files successfully\n\n"
         return header + "\n\n---\n\n".join(result_parts)
 
-    def create_planning_files(self, planning_data: Dict) -> str:
+    def create_planning_files(self, planning_data: dict) -> str:
         """
         Planning 결과에서 생성해야 할 파일들을 생성
 
@@ -148,7 +146,7 @@ class ReaderAgent:
         header = f"📝 Created {successful_creates}/{len(files_to_create)} files successfully\n\n"
         return header + "\n".join(result_parts)
 
-    def get_planning_summary(self, planning_data: Dict) -> str:
+    def get_planning_summary(self, planning_data: dict) -> str:
         """
         Planning 결과의 요약 정보를 반환
 
@@ -166,7 +164,7 @@ class ReaderAgent:
 
         return summary
 
-    def execute_planning_workflow(self, planning_data: Dict) -> str:
+    def execute_planning_workflow(self, planning_data: dict) -> str:
         """
         Planning 결과를 바탕으로 전체 워크플로우를 실행
 
@@ -195,7 +193,7 @@ class ReaderAgent:
         except Exception as e:
             return f"❌ Error executing planning workflow: {str(e)}"
 
-    def get_reading_prompt(self, planning_data: Dict) -> str:
+    def get_reading_prompt(self, planning_data: dict) -> str:
         """
         Reading 모드를 위한 프롬프트를 생성
 

@@ -1,13 +1,14 @@
+import json
 import threading
 from enum import Enum
-import json
-
-from provider.ollama import OllamaProvider
 from pathlib import Path
-from core.prompt import PromptManager
+
 from core.agent.planning_agent import PlanningAgent
 from core.agent.reader_agent import ReaderAgent
 from core.agent.writer_agent import WriterAgent
+from core.prompt import PromptManager
+from provider.ollama import OllamaProvider
+
 
 class ChatMode(Enum):
     ASK = 'ask'
@@ -204,7 +205,7 @@ Please generate code that follows the existing patterns and conventions shown in
                     return True, f"❌ Failed to get valid PlanningResult format after 3 attempts.\n\nLast response:\n```\n{response}\n```"
                 return False, ""
 
-        except json.JSONDecodeError as e:
+        except json.JSONDecodeError:
             print(f"Invalid JSON format on attempt {attempt + 1}")
             if attempt == 2:  # 마지막 시도
                 return True, f"❌ Failed to get valid JSON format after 3 attempts.\n\nLast response:\n```\n{response}\n```"
