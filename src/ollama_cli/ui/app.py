@@ -57,6 +57,12 @@ class ChatInterface(App):
         self.bot = OllamaBot(config=config)
         self.config = config
 
+        # Variables for continuous processing
+        self.current_user_input = ""
+        self.current_iteration = 0
+        self.max_iterations = 5
+        self.continue_message_widget: ChatMessage | None = None
+
     def on_mount(self) -> None:
         """
         Set up callbacks after the app is mounted.
@@ -194,10 +200,28 @@ class ChatInterface(App):
 
                     message_container.scroll_end(animate=False)
 
+                    # Check if we should continue processing
+                    self.current_iteration += 1
+                    if self.current_iteration < self.max_iterations:
+                        # Show continue message
+                        self.show_continue_message()
+                    else:
+                        # Reset for next user input
+                        self.reset_continuous_processing()
+
                 elif event.worker.name == "bot_streaming":
                     # For streaming, responses are already displayed via callbacks
                     # Just ensure we scroll to the end
                     message_container.scroll_end(animate=False)
+
+                    # Check if we should continue processing (same as non-streaming)
+                    self.current_iteration += 1
+                    if self.current_iteration < self.max_iterations:
+                        # Show continue message
+                        self.show_continue_message()
+                    else:
+                        # Reset for next user input
+                        self.reset_continuous_processing()
             elif event.worker.state == WorkerState.ERROR:
                 # Try to remove thinking indicator if it exists
                 try:
@@ -219,22 +243,26 @@ class ChatInterface(App):
                 message_container.scroll_end(animate=False)
 
 
-    def process_message_in_background(self, user_input: str) -> Worker:
+    def process_message_in_background(self, user_input: str, show_user_message: bool = True) -> Worker:
         """Process user messages in a background thread to keep UI responsive.
 
         Args:
             user_input (str): The message from the user
+            show_user_message (bool): Whether to display the user message
 
         Returns:
             Worker: A background worker processing the message
         """
         message_container = self.query_one("#message-container")
-        message_container.mount(ChatMessage(
-            sender=ChatType.USER,
-            message=user_input,
-            model=self.config.model
-        ))
-        # message_container.mount(ChatMessage("You", user_input, "user"))
+
+        # Only show user message if requested
+        if show_user_message:
+            message_container.mount(ChatMessage(
+                sender=ChatType.USER,
+                message=user_input,
+                model=self.config.model
+            ))
+            # message_container.mount(ChatMessage("You", user_input, "user"))
 
         # Add thinking indicator immediately
         thinking_indicator = ChatMessage(
@@ -263,23 +291,27 @@ class ChatInterface(App):
         )
         return worker
 
-    def process_message_stream_in_background(self, user_input: str) -> Worker:
+    def process_message_stream_in_background(self, user_input: str, show_user_message: bool = True) -> Worker:
         """Process user messages with streaming in a background thread.
 
         Args:
             user_input (str): The message from the user
+            show_user_message (bool): Whether to display the user message
 
         Returns:
             Worker: A background worker processing the streaming message
         """
         message_container = self.query_one("#message-container")
-        # message_container.mount(ChatMessage("You", user_input, "user"))
-        message_container.mount(ChatMessage(
-            sender=ChatType.USER,
-            message=user_input,
-            model=self.config.model
-        ))
-        message_container.scroll_end(animate=False)
+
+        # Only show user message if requested
+        if show_user_message:
+            # message_container.mount(ChatMessage("You", user_input, "user"))
+            message_container.mount(ChatMessage(
+                sender=ChatType.USER,
+                message=user_input,
+                model=self.config.model
+            ))
+            message_container.scroll_end(animate=False)
 
         def stream_processing():
             """Handle streaming message processing with enhanced error handling."""
@@ -327,6 +359,22 @@ class ChatInterface(App):
         input_widget = self.query_one("#user-input", Input)
         input_widget.value = ""
 
+        # Check if we're in continue mode
+        if self.continue_message_widget is not None:
+            # Handle continue response
+            should_continue = self.handle_continue_response(user_input)
+            if should_continue:
+                # Continue with the same input but don't show user message again
+                if self.config.get_stream():
+                    self.process_message_stream_in_background(self.current_user_input, show_user_message=False)
+                else:
+                    self.process_message_in_background(self.current_user_input, show_user_message=False)
+            return
+
+        # New user input - start the continuous processing
+        self.current_user_input = user_input
+        self.current_iteration = 0
+
         if self.config.get_stream():
             self.process_message_stream_in_background(user_input)
             return
@@ -357,6 +405,9 @@ class ChatInterface(App):
             message_container = self.query_one("#message-container")
             message_container.remove_children()
 
+            # Reset continuous processing state
+            self.reset_continuous_processing()
+
             # Add welcome message back
             welcome_msg = "Welcome to the AI Chat Interface!\n\nI'm here to help you with any questions or tasks.\nType your message below and press Enter to start chatting!"
             # message_container.mount(ChatMessage("Ollama CLI", welcome_msg, "system"))
@@ -365,3 +416,47 @@ class ChatInterface(App):
                 message=welcome_msg,
                 model=self.config.model
             ))
+
+    def show_continue_message(self) -> None:
+        """Show a continue message and wait for user response."""
+        message_container = self.query_one("#message-container")
+
+        continue_msg = f"계속하시겠습니까? ({self.current_iteration}/{self.max_iterations}) [Y/n]"
+        self.continue_message_widget = ChatMessage(
+            sender=ChatType.SYSTEM,
+            message=continue_msg,
+            model=self.config.model,
+            message_type='system'
+        )
+        message_container.mount(self.continue_message_widget)
+        message_container.scroll_end(animate=False)
+
+        # Set focus to input for user response
+        input_widget = self.query_one("#user-input", Input)
+        input_widget.focus()
+
+    def reset_continuous_processing(self) -> None:
+        """Reset the continuous processing state."""
+        self.current_user_input = ""
+        self.current_iteration = 0
+        self.continue_message_widget = None
+
+    def handle_continue_response(self, response: str) -> bool:
+        """Handle user response to continue message. Returns True if should continue."""
+        response = response.strip().lower()
+
+        # Remove the continue message
+        if self.continue_message_widget:
+            message_container = self.query_one("#message-container")
+            try:
+                message_container.remove_children([self.continue_message_widget])
+            except:
+                pass
+            self.continue_message_widget = None
+
+        # Check if user wants to continue
+        if response in ['y', 'yes', '예', '네', ''] or response == '':  # Default to yes
+            return True
+        else:
+            self.reset_continuous_processing()
+            return False
