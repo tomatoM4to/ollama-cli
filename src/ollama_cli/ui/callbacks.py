@@ -4,7 +4,7 @@ from enum import Enum
 
 from textual.app import App
 
-from core.config import Config
+from ollama_cli.core.config import Config
 from ollama_cli.ui.chat_message import ChatMessage, ChatType
 from ollama_cli.ui.markdown_parser import preprocess_markdown
 

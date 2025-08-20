@@ -1,6 +1,6 @@
 from collections.abc import Iterator
 
-from core.config import AgentMode, Config
+from ollama_cli.core.config import AgentMode, Config
 from ollama_cli.ui.callbacks import ChatCallback, ChatEvent
 
 

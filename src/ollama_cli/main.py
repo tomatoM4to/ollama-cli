@@ -3,7 +3,7 @@ from pathlib import Path
 from rich.console import Console
 from rich.panel import Panel
 
-from core.config import Config
+from ollama_cli.core.config import Config
 from ollama_cli.settings.ai_setup import OllamaSetup, select_from_menu
 from ollama_cli.ui.app import ChatInterface
 
