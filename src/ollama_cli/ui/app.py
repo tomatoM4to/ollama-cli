@@ -478,6 +478,39 @@ class ChatInterface(App):
 
         # Check if user wants to continue
         if response in ['y', 'yes', '예', '네', ''] or response == '':  # Default to yes
+            # Execute planning workflow if we just completed planning step
+            if (self.config.get_chat_mode() == ChatMode.AGENT and
+                self.current_iteration == 1 and  # Just completed planning (moving to reader)
+                len(self.agent_steps) > self.current_iteration and
+                self.agent_steps[self.current_iteration] == AgentMode.READER and
+                hasattr(self.config, 'planning_result') and
+                self.config.planning_result.strip()):
+
+                try:
+                    # Execute the planning workflow (read files, create files, etc.)
+                    workflow_result = self.config.execute_planning_workflow()
+
+                    # Display the workflow result
+                    message_container = self.query_one("#message-container")
+                    message_container.mount(ChatMessage(
+                        sender=ChatType.SYSTEM,
+                        message=f"🔧 Planning Workflow Executed:\n\n{workflow_result}",
+                        model=self.config.get_model(),
+                        message_type='system'
+                    ))
+                    message_container.scroll_end(animate=False)
+
+                except Exception as e:
+                    # Display error if workflow fails
+                    message_container = self.query_one("#message-container")
+                    message_container.mount(ChatMessage(
+                        sender=ChatType.ERROR,
+                        message=f"❌ Planning workflow failed: {str(e)}",
+                        model=self.config.get_model(),
+                        message_type='error'
+                    ))
+                    message_container.scroll_end(animate=False)
+
             return True
         else:
             self.reset_continuous_processing()

@@ -14,6 +14,7 @@ class PromptManager:
         self.system_prompt = self._load_system_prompt()
         self.ask_prompt = self._load_ask_prompt()
         self.planning_prompt = self._load_planning_prompt()
+        self.reading_prompt = self._reading_prompt()
 
     def _load_system_prompt(self) -> str:
         default_prompts = """
@@ -162,6 +163,8 @@ User Input : {user_input}
 
     def _load_planning_prompt(self) -> str:
         default_prompt = """
+## Planning
+
 Analyze the provided workspace and directory structure to create an execution plan for the user's request.
 
 **Key Planning Tasks:**
@@ -192,3 +195,10 @@ Analyze the provided workspace and directory structure to create an execution pl
         prompt: str = self.ask_prompt
         prompt += f"\n\nUser Input: {user_input}"
         return prompt
+
+    def _reading_prompt(self) -> str:
+        default_prompt = """
+## Reading
+
+"""
+        return default_prompt
