@@ -201,12 +201,17 @@ class ChatInterface(App):
                     message_container.scroll_end(animate=False)
 
                     # Check if we should continue processing
-                    self.current_iteration += 1
-                    if self.current_iteration < self.max_iterations:
-                        # Show continue message
-                        self.show_continue_message()
+                    # Only repeat if stream is OFF and chat mode is AGENT (ask: off)
+                    if not self.config.get_stream() and self.config.get_chat_mode() == ChatMode.AGENT:
+                        self.current_iteration += 1
+                        if self.current_iteration < self.max_iterations:
+                            # Show continue message
+                            self.show_continue_message()
+                        else:
+                            # Reset for next user input
+                            self.reset_continuous_processing()
                     else:
-                        # Reset for next user input
+                        # For other cases, just reset without continuing
                         self.reset_continuous_processing()
 
                 elif event.worker.name == "bot_streaming":
@@ -214,14 +219,9 @@ class ChatInterface(App):
                     # Just ensure we scroll to the end
                     message_container.scroll_end(animate=False)
 
-                    # Check if we should continue processing (same as non-streaming)
-                    self.current_iteration += 1
-                    if self.current_iteration < self.max_iterations:
-                        # Show continue message
-                        self.show_continue_message()
-                    else:
-                        # Reset for next user input
-                        self.reset_continuous_processing()
+                    # Check if we should continue processing
+                    # Only repeat if stream is OFF and chat mode is AGENT (but streaming is ON here, so no repeat)
+                    self.reset_continuous_processing()
             elif event.worker.state == WorkerState.ERROR:
                 # Try to remove thinking indicator if it exists
                 try:
@@ -365,21 +365,23 @@ class ChatInterface(App):
             should_continue = self.handle_continue_response(user_input)
             if should_continue:
                 # Continue with the same input but don't show user message again
-                if self.config.get_stream():
-                    self.process_message_stream_in_background(self.current_user_input, show_user_message=False)
-                else:
-                    self.process_message_in_background(self.current_user_input, show_user_message=False)
+                # Only continue if we're in the repeating mode (stream: off, agent: on)
+                if not self.config.get_stream() and self.config.get_chat_mode() == ChatMode.AGENT:
+                    if self.config.get_stream():
+                        self.process_message_stream_in_background(self.current_user_input, show_user_message=False)
+                    else:
+                        self.process_message_in_background(self.current_user_input, show_user_message=False)
             return
 
         # New user input - start the continuous processing
         self.current_user_input = user_input
         self.current_iteration = 0
 
+        # Process the message based on stream setting
         if self.config.get_stream():
             self.process_message_stream_in_background(user_input)
-            return
-
-        self.process_message_in_background(user_input)
+        else:
+            self.process_message_in_background(user_input)
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button press events."""
