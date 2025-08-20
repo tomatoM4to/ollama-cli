@@ -1,6 +1,6 @@
 from collections.abc import Iterator
 
-from core.config import Config
+from core.config import Config, AgentMode
 from ollama_cli.ui.callbacks import ChatCallback, ChatEvent
 
 
@@ -27,9 +27,9 @@ class OllamaBot:
             self.notify_callbacks(ChatEvent.ERROR, error_message)
             yield "I apologize, but I encountered an error while processing your message with Ollama."
 
-    def process_message(self, message: str) -> str:
+    def process_message(self, message: str, agent_mode: AgentMode | None = None) -> str:
         try:
-            response = self.config.chat(message)
+            response = self.config.chat(message, agent_mode)
             return response
 
         except Exception as e:

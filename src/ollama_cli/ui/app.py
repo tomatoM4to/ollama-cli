@@ -21,7 +21,7 @@ from textual.containers import Container, ScrollableContainer
 from textual.widgets import Button, Header, Input
 from textual.worker import Worker, WorkerState
 
-from core.config import ChatMode, Config
+from core.config import ChatMode, Config, AgentMode
 from ollama_cli.ui.bot import OllamaBot
 from ollama_cli.ui.callbacks import ChatEvent, TuiCallback
 from ollama_cli.ui.chat_message import ChatMessage, ChatType
@@ -60,7 +60,8 @@ class ChatInterface(App):
         # Variables for continuous processing
         self.current_user_input = ""
         self.current_iteration = 0
-        self.max_iterations = 5
+        self.agent_steps = [AgentMode.PLANNING, AgentMode.READER, AgentMode.WRITER, AgentMode.REVIEWER]
+        self.max_iterations = len(self.agent_steps)
         self.continue_message_widget: ChatMessage | None = None
 
     def on_mount(self) -> None:
@@ -205,7 +206,7 @@ class ChatInterface(App):
                     if not self.config.get_stream() and self.config.get_chat_mode() == ChatMode.AGENT:
                         self.current_iteration += 1
                         if self.current_iteration < self.max_iterations:
-                            # Show continue message
+                            # Show continue message with current step
                             self.show_continue_message()
                         else:
                             # Reset for next user input
@@ -243,12 +244,13 @@ class ChatInterface(App):
                 message_container.scroll_end(animate=False)
 
 
-    def process_message_in_background(self, user_input: str, show_user_message: bool = True) -> Worker:
+    def process_message_in_background(self, user_input: str, show_user_message: bool = True, agent_mode: AgentMode | None = None) -> Worker:
         """Process user messages in a background thread to keep UI responsive.
 
         Args:
             user_input (str): The message from the user
             show_user_message (bool): Whether to display the user message
+            agent_mode (AgentMode | None): The specific agent mode to use
 
         Returns:
             Worker: A background worker processing the message
@@ -264,10 +266,15 @@ class ChatInterface(App):
             ))
             # message_container.mount(ChatMessage("You", user_input, "user"))
 
-        # Add thinking indicator immediately
+        # Add thinking indicator immediately with agent mode info
+        if agent_mode and self.config.get_chat_mode() == ChatMode.AGENT:
+            thinking_msg = f"{agent_mode.value.upper()} 단계 연산중..."
+        else:
+            thinking_msg = "AI 연산중..."
+
         thinking_indicator = ChatMessage(
             sender=ChatType.AI,
-            message="AI 연산중...",
+            message=thinking_msg,
             model=self.config.get_model(),
             message_type='typing'
         )
@@ -278,7 +285,7 @@ class ChatInterface(App):
         def process_with_indicator():
             """Process message and return both result and thinking indicator for cleanup."""
             try:
-                result = self.bot.process_message(user_input)
+                result = self.bot.process_message(user_input, agent_mode)
                 return result, thinking_indicator
             except Exception as e:
                 return f"⚠️ 오류가 발생했습니다: {str(e)}", thinking_indicator
@@ -367,21 +374,28 @@ class ChatInterface(App):
                 # Continue with the same input but don't show user message again
                 # Only continue if we're in the repeating mode (stream: off, agent: on)
                 if not self.config.get_stream() and self.config.get_chat_mode() == ChatMode.AGENT:
+                    # Get the current agent step
+                    current_agent_mode = self.agent_steps[self.current_iteration]
                     if self.config.get_stream():
                         self.process_message_stream_in_background(self.current_user_input, show_user_message=False)
                     else:
-                        self.process_message_in_background(self.current_user_input, show_user_message=False)
+                        self.process_message_in_background(self.current_user_input, show_user_message=False, agent_mode=current_agent_mode)
             return
 
         # New user input - start the continuous processing
         self.current_user_input = user_input
         self.current_iteration = 0
 
-        # Process the message based on stream setting
+        # Process the message based on stream setting and mode
         if self.config.get_stream():
             self.process_message_stream_in_background(user_input)
         else:
-            self.process_message_in_background(user_input)
+            # For agent mode, start with the first step
+            if self.config.get_chat_mode() == ChatMode.AGENT:
+                current_agent_mode = self.agent_steps[self.current_iteration]
+                self.process_message_in_background(user_input, agent_mode=current_agent_mode)
+            else:
+                self.process_message_in_background(user_input)
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button press events."""
@@ -423,7 +437,13 @@ class ChatInterface(App):
         """Show a continue message and wait for user response."""
         message_container = self.query_one("#message-container")
 
-        continue_msg = f"계속하시겠습니까? ({self.current_iteration}/{self.max_iterations}) [Y/n]"
+        # Show different message based on mode
+        if self.config.get_chat_mode() == ChatMode.AGENT and self.current_iteration < len(self.agent_steps):
+            next_step = self.agent_steps[self.current_iteration].value.upper()
+            continue_msg = f"다음 단계 '{next_step}'를 진행하시겠습니까? ({self.current_iteration + 1}/{self.max_iterations}) [Y/n]"
+        else:
+            continue_msg = f"계속하시겠습니까? ({self.current_iteration}/{self.max_iterations}) [Y/n]"
+
         self.continue_message_widget = ChatMessage(
             sender=ChatType.SYSTEM,
             message=continue_msg,

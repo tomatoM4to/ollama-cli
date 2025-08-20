@@ -9,6 +9,11 @@ class ChatMode(Enum):
     ASK = 'ask'
     AGENT = 'agent'
 
+class AgentMode(Enum):
+    PLANNING = 'planning'
+    READER = 'reader'
+    WRITER = 'writer'
+    REVIEWER = 'reviewer'
 
 class Config:
     _instance = None
@@ -33,7 +38,7 @@ class Config:
             self.ollama_provider: OllamaProvider | None = None
             self.work_dir: Path | None = None
             self.prompt_manager: PromptManager = PromptManager()
-
+            self.agent_mode: AgentMode = AgentMode.PLANNING
     def initialize(
             self,
             platform: str,
@@ -71,7 +76,7 @@ class Config:
             raise ValueError("Ollama provider is not set. Please initialize the configuration first.")
         return self.ollama_provider
 
-    def chat(self, user_message: str) -> str:
+    def chat(self, user_message: str, agent_mode: AgentMode | None = None) -> str:
         if self.ollama_provider is None:
             raise ValueError("Ollama provider is not set. Please initialize the configuration first.")
 
