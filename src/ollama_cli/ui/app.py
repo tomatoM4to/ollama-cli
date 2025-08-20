@@ -480,7 +480,7 @@ class ChatInterface(App):
         if response in ['y', 'yes', '예', '네', ''] or response == '':  # Default to yes
             # Execute planning workflow if we just completed planning step
             if (self.config.get_chat_mode() == ChatMode.AGENT and
-                self.current_iteration == 1 and  # Just completed planning (moving to reader)
+                self.current_iteration == 1 and  # Just completed planning (moving to READER)
                 len(self.agent_steps) > self.current_iteration and
                 self.agent_steps[self.current_iteration] == AgentMode.READER and
                 hasattr(self.config, 'planning_result') and
