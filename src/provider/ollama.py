@@ -12,22 +12,16 @@ class OllamaProvider(LLMProvider):
             model: str,
             base_url: str = "http://localhost:11434",
             auto_detect_mode: bool = True,
-            default_mode: str = 'conversation_mode'
     ):
         self.model = model
         self.client = ollama.Client(host=base_url)
-        self.prompt_manager = PromptManager()
         self.auto_detect_mode = auto_detect_mode
-        self.default_mode = default_mode
 
     def chat_stream(self, message: str) -> Iterator[str]:
-
-        prompt = self.prompt_manager.get_system_prompt(user_input=message)
-
         try:
             response_stream = self.client.generate(
                 model=self.model,
-                prompt=prompt,
+                prompt=message,
                 stream=True,
                 think=False,  # Disable thinking time for streaming
             )
@@ -42,13 +36,10 @@ class OllamaProvider(LLMProvider):
             raise ConnectionError(f"Failed to connect to Ollama server: {e}") from e
 
     def chat(self, message: str) -> str:
-
-        prompt = self.prompt_manager.get_system_prompt(user_input=message)
-
         try:
             response = self.client.generate(
                 model=self.model,
-                prompt=prompt,
+                prompt=message,
                 stream=False,  # Disable streaming for complete response
                 think=False,   # Disable thinking time
             )

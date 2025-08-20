@@ -1,10 +1,10 @@
 import os
-
+from pathlib import Path
 from rich.console import Console
 from rich.panel import Panel
 
 from ollama_cli.settings.ai_setup import OllamaSetup, select_from_menu
-from ollama_cli.settings.config import Config
+from core.config import Config
 from ollama_cli.ui.app import ChatInterface
 
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
@@ -85,9 +85,11 @@ def main():
     )
     console.print(ready_panel)
 
-    config = Config(
+    config = Config()
+    config.initialize(
         platform='Ollama',
-        model=selected_model
+        model=selected_model,
+        work_dir=Path.cwd()
     )
 
     app = ChatInterface(config)

@@ -1,6 +1,6 @@
 from collections.abc import Iterator
 
-from ollama_cli.settings.config import Config
+from core.config import Config
 from ollama_cli.ui.callbacks import ChatCallback, ChatEvent
 
 
@@ -18,7 +18,7 @@ class OllamaBot:
 
     def process_message_stream(self, message: str) -> Iterator[str]:
         try:
-            for chunk in self.config.ollama_provider.chat_stream(message):
+            for chunk in self.config.get_ollama_provider().chat_stream(message):
                 if chunk.strip():
                     yield chunk
 
@@ -29,7 +29,7 @@ class OllamaBot:
 
     def process_message(self, message: str) -> str:
         try:
-            response = self.config.ollama_provider.chat(message)
+            response = self.config.chat(message)
             return response
 
         except Exception as e:

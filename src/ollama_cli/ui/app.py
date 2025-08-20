@@ -21,7 +21,7 @@ from textual.containers import Container, ScrollableContainer
 from textual.widgets import Button, Header, Input
 from textual.worker import Worker, WorkerState
 
-from ollama_cli.settings.config import ChatMode, Config
+from core.config import ChatMode, Config
 from ollama_cli.ui.bot import OllamaBot
 from ollama_cli.ui.callbacks import ChatEvent, TuiCallback
 from ollama_cli.ui.chat_message import ChatMessage, ChatType
@@ -129,10 +129,10 @@ class ChatInterface(App):
                 yield ChatMessage(
                     sender=ChatType.SYSTEM,
                     message=welcome_msg,
-                    model=self.config.model,
+                    model=self.config.get_model(),
                     message_type='system'
                 )
-                # yield ChatMessage("Ollama CLI", welcome_msg, "system", self.config.model)
+                # yield ChatMessage("Ollama CLI", welcome_msg, "system", self.config.get_model())
         with Container(id="input-container"):
             yield Input(
                 placeholder="Type your message here and press Enter to chat...",
@@ -186,7 +186,7 @@ class ChatInterface(App):
                         message_container.mount(ChatMessage(
                             sender=ChatType.AI,
                             message=result,
-                            model=self.config.model,
+                            model=self.config.get_model(),
                         ))
                         # message_container.mount(ChatMessage("Bot", result, "bot"))
                     else:
@@ -194,7 +194,7 @@ class ChatInterface(App):
                         message_container.mount(ChatMessage(
                             sender=ChatType.AI,
                             message=str(worker_result),
-                            model=self.config.model
+                            model=self.config.get_model()
                         ))
                         # message_container.mount(ChatMessage("Bot", str(worker_result), "bot"))
 
@@ -237,7 +237,7 @@ class ChatInterface(App):
                 message_container.mount(ChatMessage(
                     sender=ChatType.ERROR,
                     message=error_message,
-                    model=self.config.model
+                    model=self.config.get_model()
                 ))
                 # message_container.mount(ChatMessage("Error", error_message, "error"))
                 message_container.scroll_end(animate=False)
@@ -260,7 +260,7 @@ class ChatInterface(App):
             message_container.mount(ChatMessage(
                 sender=ChatType.USER,
                 message=user_input,
-                model=self.config.model
+                model=self.config.get_model()
             ))
             # message_container.mount(ChatMessage("You", user_input, "user"))
 
@@ -268,7 +268,7 @@ class ChatInterface(App):
         thinking_indicator = ChatMessage(
             sender=ChatType.AI,
             message="AI 연산중...",
-            model=self.config.model,
+            model=self.config.get_model(),
             message_type='typing'
         )
         # thinking_indicator = ChatMessage("Bot", "AI 연산중...", "typing")
@@ -309,7 +309,7 @@ class ChatInterface(App):
             message_container.mount(ChatMessage(
                 sender=ChatType.USER,
                 message=user_input,
-                model=self.config.model
+                model=self.config.get_model()
             ))
             message_container.scroll_end(animate=False)
 
@@ -414,7 +414,7 @@ class ChatInterface(App):
             message_container.mount(ChatMessage(
                 sender=ChatType.SYSTEM,
                 message=welcome_msg,
-                model=self.config.model
+                model=self.config.get_model()
             ))
 
     def show_continue_message(self) -> None:
@@ -425,7 +425,7 @@ class ChatInterface(App):
         self.continue_message_widget = ChatMessage(
             sender=ChatType.SYSTEM,
             message=continue_msg,
-            model=self.config.model,
+            model=self.config.get_model(),
             message_type='system'
         )
         message_container.mount(self.continue_message_widget)

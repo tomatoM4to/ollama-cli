@@ -4,7 +4,7 @@ from enum import Enum
 
 from textual.app import App
 
-from ollama_cli.settings.config import Config
+from core.config import Config
 from ollama_cli.ui.chat_message import ChatMessage, ChatType
 from ollama_cli.ui.markdown_parser import preprocess_markdown
 
@@ -64,7 +64,7 @@ class TuiCallback(ChatCallback):
                 processing_msg = ChatMessage(
                     ChatType.AI,
                     f"💭 {message}",
-                    model=self.config.model,
+                    model=self.config.get_model(),
                 )
                 # processing_msg = self.create_message("Bot", message, "system")
                 self.message_container.mount(processing_msg)
@@ -72,7 +72,7 @@ class TuiCallback(ChatCallback):
                 thinking_msg = ChatMessage(
                     ChatType.AI,
                     f"💭 {message}",
-                    model=self.config.model,
+                    model=self.config.get_model(),
                     message_type='typing'
                 )
                 # thinking_msg = self.create_message("Bot", f"💭 {message}", "typing")
@@ -81,7 +81,7 @@ class TuiCallback(ChatCallback):
                 error_msg = ChatMessage(
                     ChatType.ERROR,
                     f"❌ {message}",
-                    model=self.config.model,
+                    model=self.config.get_model(),
                 )
                 # error_msg = self.create_message("Error", f"❌ {message}", "error")
                 self.message_container.mount(error_msg)
@@ -89,7 +89,7 @@ class TuiCallback(ChatCallback):
                 complete_msg = ChatMessage(
                     ChatType.SYSTEM,
                     "✅ Response complete",
-                    model=self.config.model,
+                    model=self.config.get_model(),
                 )
                 # complete_msg = self.create_message("System", "✅ Response complete", "system")
                 self.message_container.mount(complete_msg)
@@ -99,7 +99,7 @@ class TuiCallback(ChatCallback):
                 self.current_bot_message = ChatMessage(
                     ChatType.AI,
                     "",
-                    model=self.config.model,
+                    model=self.config.get_model(),
                 )
                 # self.current_bot_message = self.create_message("Bot", "", "bot")
                 self.message_container.mount(self.current_bot_message)
