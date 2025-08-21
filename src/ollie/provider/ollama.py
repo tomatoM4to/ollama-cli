@@ -1,7 +1,7 @@
 from collections.abc import Iterator
 
 import ollama
-from ollama_cli.provider.provider import LLMProvider
+from ollie.provider.provider import LLMProvider
 
 
 class OllamaProvider(LLMProvider):

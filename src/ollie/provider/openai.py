@@ -1,7 +1,7 @@
 from collections.abc import Iterator
 
 from openai import OpenAI
-from ollama_cli.provider.provider import LLMProvider
+from ollie.provider.provider import LLMProvider
 
 
 class OpenAIProvider(LLMProvider):

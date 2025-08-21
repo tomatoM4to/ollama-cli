@@ -1,7 +1,7 @@
 from collections.abc import Iterator
 
-from ollama_cli.core.config import AgentMode, Config
-from ollama_cli.ui.callbacks import ChatCallback, ChatEvent
+from ollie.core.config import AgentMode, Config
+from ollie.ui.callbacks import ChatCallback, ChatEvent
 
 
 class OllamaBot:

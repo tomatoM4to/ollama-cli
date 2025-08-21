@@ -3,11 +3,11 @@ import threading
 from enum import Enum
 from pathlib import Path
 
-from ollama_cli.core.agent.planning_agent import PlanningAgent
-from ollama_cli.core.agent.reader_agent import ReaderAgent
-from ollama_cli.core.agent.writer_agent import WriterAgent
-from ollama_cli.core.prompt import PromptManager
-from ollama_cli.provider.ollama import OllamaProvider
+from ollie.core.agent.planning_agent import PlanningAgent
+from ollie.core.agent.reader_agent import ReaderAgent
+from ollie.core.agent.writer_agent import WriterAgent
+from ollie.core.prompt import PromptManager
+from ollie.provider.ollama import OllamaProvider
 
 
 class ChatMode(Enum):

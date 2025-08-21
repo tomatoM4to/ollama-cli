@@ -21,10 +21,10 @@ from textual.containers import Container, ScrollableContainer
 from textual.widgets import Button, Header, Input
 from textual.worker import Worker, WorkerState
 
-from ollama_cli.core.config import AgentMode, ChatMode, Config
-from ollama_cli.ui.bot import OllamaBot
-from ollama_cli.ui.callbacks import ChatEvent, TuiCallback
-from ollama_cli.ui.chat_message import ChatMessage, ChatType
+from ollie.core.config import AgentMode, ChatMode, Config
+from ollie.ui.bot import OllamaBot
+from ollie.ui.callbacks import ChatEvent, TuiCallback
+from ollie.ui.chat_message import ChatMessage, ChatType
 
 
 class ChatInterface(App):

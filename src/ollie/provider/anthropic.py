@@ -1,7 +1,7 @@
 from collections.abc import Iterator
 
 import anthropic
-from ollama_cli.provider.provider import LLMProvider
+from ollie.provider.provider import LLMProvider
 
 
 class AnthropicProvider(LLMProvider):

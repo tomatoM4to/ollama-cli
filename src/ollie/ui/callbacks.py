@@ -4,9 +4,9 @@ from enum import Enum
 
 from textual.app import App
 
-from ollama_cli.core.config import Config
-from ollama_cli.ui.chat_message import ChatMessage, ChatType
-from ollama_cli.ui.markdown_parser import preprocess_markdown
+from ollie.core.config import Config
+from ollie.ui.chat_message import ChatMessage, ChatType
+from ollie.ui.markdown_parser import preprocess_markdown
 
 
 class ChatEvent(Enum):
