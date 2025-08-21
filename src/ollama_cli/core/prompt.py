@@ -143,14 +143,6 @@ A: 답변
 - ❌ 비권장사항
 - 💼 실무/적용
 - 📚 참고자료
-
-## 최종 체크리스트
-응답하기 전 다음을 확인하세요:
-- [ ] 사용자의 언어로 응답했는가?
-- [ ] 마크다운 형식을 적절히 활용했는가?
-- [ ] 질문에 직접적으로 답변했는가?
-- [ ] 구조화되고 읽기 쉬운가?
-- [ ] 실용적이고 도움이 되는 내용인가?
 """
         return default_ask_prompt
 
@@ -260,21 +252,20 @@ When writing file content in the JSON "content" field:
    - NO unescaped quotes
    - Content should be one continuous string with \\n for line breaks
 
-3. **Example of CORRECT formatting:**
+3. **IMPORTANT: Proper formatting and indentation:**
+   - CSS: Use proper indentation (4 spaces per level), line breaks after { and ;
+   - JavaScript/TypeScript: Use proper indentation and spacing
+   - Python: Follow PEP 8 with 4-space indentation
+   - HTML: Use proper nesting and indentation
+
+4. **Example of CORRECT CSS formatting:**
    ```
-   "content": "#!/usr/bin/env python3\\n\\ndef hello_world():\\n    print(\\"Hello, World!\\")\\n\\nif __name__ == \\"__main__\\":\\n    hello_world()\\n"
+   "content": "body {\\n    font-family: Arial, sans-serif;\\n    margin: 20px;\\n    background: #111;\\n    color: #fff;\\n}\\n\\nh1 {\\n    text-align: center;\\n    color: #0ff;\\n    text-shadow: 0 0 10px #0ff;\\n}\\n\\n#new-task {\\n    width: 70%;\\n    padding: 8px;\\n    background: #222;\\n    border: 2px solid #0ff;\\n    color: #0ff;\\n    box-shadow: 0 0 5px #0ff;\\n}"
    ```
 
-4. **Example of WRONG formatting (DO NOT DO THIS):**
+5. **Example of WRONG formatting (DO NOT DO THIS):**
    ```
-   "content": "#!/usr/bin/env python3
-
-   def hello_world():
-       print("Hello, World!")
-
-   if __name__ == "__main__":
-       hello_world()
-   "
+   "content": "body {font-family: Arial, sans-serif; margin:20px; background:#111; color:#fff;} h1{text-align:center;color:#0ff; text-shadow:0 0 10px #0ff;}"
    ```
 
 **Output Format:** Respond ONLY in valid JSON (no ```json blocks):
@@ -284,19 +275,40 @@ When writing file content in the JSON "content" field:
         {
             "path": "/absolute/path/to/file.ext",
             "action": "create|modify|delete",
-            "content": "properly escaped file content with \\n for newlines and \\" for quotes"
+            "content": "properly formatted and escaped file content with \\n for newlines and \\" for quotes"
         }
     ],
     "summary": "concise description of what was implemented"
 }
 
-**FINAL VALIDATION CHECKLIST:**
-- [ ] Response starts with { and ends with }
-- [ ] All file content uses \\n for newlines
-- [ ] All quotes in content are escaped as \\"
-- [ ] No actual line breaks inside JSON strings
-- [ ] Valid JSON syntax throughout
-- [ ] No markdown code blocks or extra text
+**FORMATTING GUIDELINES BY FILE TYPE:**
+
+**CSS Files:**
+- Each selector on its own line
+- Opening brace { on same line as selector
+- Properties indented with 4 spaces
+- Each property on its own line
+- Closing brace } on its own line, same indentation as selector
+- Empty line between different selectors
+- Use proper spacing around colons and semicolons
+
+**JavaScript/TypeScript Files:**
+- Use 4-space indentation
+- Opening braces { on same line
+- Proper spacing around operators
+- Semicolons at end of statements
+- Empty lines between functions
+
+**Python Files:**
+- Follow PEP 8 guidelines
+- Use 4-space indentation
+- Two blank lines between top-level functions/classes
+- One blank line between methods
+
+**HTML Files:**
+- Use 4-space indentation for nested elements
+- Proper tag nesting
+- Attributes on same line when reasonable
 
 **IMPORTANT REMINDERS:**
 - Start your response directly with { (opening brace)
@@ -304,5 +316,7 @@ When writing file content in the JSON "content" field:
 - File content MUST be properly escaped as a single JSON string
 - Use \\n for ALL line breaks in file content
 - Escape ALL quotes in file content as \\"
+- Format code properly with appropriate indentation and spacing
+- Add empty lines between logical sections for readability
 """
         return default_prompt

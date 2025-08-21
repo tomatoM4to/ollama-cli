@@ -114,10 +114,217 @@ class WriterAgent:
         Returns:
             str: 실제 파일에 쓸 내용
         """
-        # JSON 파싱 과정에서 \\n은 이미 \n으로, \\"는 이미 "로 변환됨
-        # 따라서 추가 처리가 필요하지 않을 수도 있지만,
-        # 혹시 모를 케이스를 위해 체크
-        return content
+        # JSON 파싱 과정에서 이스케이프는 대부분 해제되지만,
+        # 잘못된 이스케이프 시퀀스가 텍스트로 남아있을 수 있음
+
+        processed_content = content
+
+        # 잘못된 이스케이프 시퀀스 처리 (AI가 잘못 생성한 경우)
+        if '\\n' in processed_content:
+            processed_content = processed_content.replace('\\n', '\n')
+        if '\\t' in processed_content:
+            processed_content = processed_content.replace('\\t', '\t')
+        if '\\"' in processed_content:
+            processed_content = processed_content.replace('\\"', '"')
+        if '\\\\' in processed_content:
+            processed_content = processed_content.replace('\\\\', '\\')
+
+        # 파일별 포매팅 처리는 확장자를 기반으로 write_file_safely에서 처리
+        return processed_content
+
+    def _is_css_content(self, content: str) -> bool:
+        """CSS 콘텐츠인지 확인"""
+        css_indicators = ['{', '}', ':', ';', 'background', 'color', 'font-family', 'margin', 'padding']
+        return any(indicator in content for indicator in css_indicators)
+
+    def _is_js_ts_content(self, content: str) -> bool:
+        """JavaScript/TypeScript 콘텐츠인지 확인"""
+        js_indicators = ['function', 'const', 'let', 'var', '=>', 'console.log', 'document.']
+        return any(indicator in content for indicator in js_indicators)
+
+    def _is_python_content(self, content: str) -> bool:
+        """Python 콘텐츠인지 확인"""
+        py_indicators = ['def ', 'class ', 'import ', 'from ', 'if __name__', 'print(']
+        return any(indicator in content for indicator in py_indicators)
+
+    def _is_html_content(self, content: str) -> bool:
+        """HTML 콘텐츠인지 확인"""
+        html_indicators = ['<html', '<head', '<body', '<div', '<p>', '<!DOCTYPE']
+        return any(indicator in content for indicator in html_indicators)
+
+    def _format_css_content(self, content: str) -> str:
+        """CSS 콘텐츠 포매팅"""
+        # CSS 포매팅 규칙
+        lines = []
+        current_line = ""
+        indent_level = 0
+
+        i = 0
+        while i < len(content):
+            char = content[i]
+
+            if char == '{':
+                current_line += char
+                lines.append('    ' * indent_level + current_line.strip())
+                current_line = ""
+                indent_level += 1
+            elif char == '}':
+                if current_line.strip():
+                    lines.append('    ' * indent_level + current_line.strip())
+                indent_level = max(0, indent_level - 1)
+                lines.append('    ' * indent_level + '}')
+                current_line = ""
+                # } 뒤에 공백 라인 추가 (단, 마지막이 아닌 경우)
+                if i + 1 < len(content) and content[i + 1:].strip():
+                    lines.append("")
+            elif char == ';':
+                current_line += char
+                # 세미콜론 뒤에 공백이나 줄바꿈이 있으면 새 줄로
+                if i + 1 < len(content) and content[i + 1] in [' ', '\t', '\n', '\r']:
+                    lines.append('    ' * indent_level + current_line.strip())
+                    current_line = ""
+                    # 세미콜론 뒤의 공백들 건너뛰기
+                    j = i + 1
+                    while j < len(content) and content[j] in [' ', '\t']:
+                        j += 1
+                    i = j - 1
+                else:
+                    # 세미콜론 바로 뒤에 다른 속성이 오는 경우 (압축된 CSS)
+                    lines.append('    ' * indent_level + current_line.strip())
+                    current_line = ""
+            elif char in ['\n', '\r']:
+                if current_line.strip():
+                    lines.append('    ' * indent_level + current_line.strip())
+                    current_line = ""
+            elif char == ' ' and not current_line.strip():
+                # 앞에 공백만 있는 경우 무시
+                pass
+            else:
+                current_line += char
+
+            i += 1
+
+        # 마지막 라인 처리
+        if current_line.strip():
+            lines.append('    ' * indent_level + current_line.strip())
+
+        # 빈 줄들 정리 (연속된 빈 줄을 하나로)
+        formatted_lines = []
+        prev_was_empty = False
+        for line in lines:
+            if not line.strip():
+                if not prev_was_empty:
+                    formatted_lines.append("")
+                prev_was_empty = True
+            else:
+                formatted_lines.append(line)
+                prev_was_empty = False
+
+        return '\n'.join(formatted_lines)
+
+    def _format_js_ts_content(self, content: str) -> str:
+        """JavaScript/TypeScript 콘텐츠 포매팅"""
+        lines = content.split('\n')
+        formatted_lines = []
+        indent_level = 0
+
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                formatted_lines.append("")
+                continue
+
+            # 닫는 괄호들은 들여쓰기 레벨을 먼저 줄임
+            if stripped.startswith('}') or stripped.startswith(']') or stripped.startswith(')'):
+                indent_level = max(0, indent_level - 1)
+
+            formatted_lines.append('    ' * indent_level + stripped)
+
+            # 여는 괄호들은 들여쓰기 레벨을 늘림
+            if stripped.endswith('{') or stripped.endswith('[') or stripped.endswith('('):
+                indent_level += 1
+
+        return '\n'.join(formatted_lines)
+
+    def _format_python_content(self, content: str) -> str:
+        """Python 콘텐츠 포매팅"""
+        lines = content.split('\n')
+        formatted_lines = []
+        indent_level = 0
+
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                formatted_lines.append("")
+                continue
+
+            # Python의 들여쓰기는 주로 콜론으로 판단
+            if any(stripped.startswith(keyword) for keyword in ['except', 'elif', 'else', 'finally']):
+                current_indent = max(0, indent_level - 1)
+            else:
+                current_indent = indent_level
+
+            formatted_lines.append('    ' * current_indent + stripped)
+
+            # 콜론으로 끝나면 들여쓰기 증가
+            if stripped.endswith(':'):
+                indent_level += 1
+            # 함수나 클래스 정의 후 빈 줄이 있으면 들여쓰기 유지
+            elif stripped.startswith(('def ', 'class ', 'if ', 'for ', 'while ', 'try:', 'with ')):
+                if not stripped.endswith(':'):
+                    pass  # 이미 콜론 처리에서 해결
+
+        return '\n'.join(formatted_lines)
+
+    def _format_html_content(self, content: str) -> str:
+        """HTML 콘텐츠 포매팅"""
+        lines = content.split('\n')
+        formatted_lines = []
+        indent_level = 0
+
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                formatted_lines.append("")
+                continue
+
+            # 닫는 태그나 특별한 케이스들 처리
+            if stripped.startswith('</') and not stripped.startswith('<!--'):
+                indent_level = max(0, indent_level - 1)
+                formatted_lines.append('    ' * indent_level + stripped)
+            # DOCTYPE 선언
+            elif stripped.startswith('<!DOCTYPE'):
+                formatted_lines.append(stripped)  # DOCTYPE는 들여쓰기 없음
+            # 주석 처리
+            elif stripped.startswith('<!--'):
+                formatted_lines.append('    ' * indent_level + stripped)
+            # 자체 닫는 태그들 (void elements)
+            elif any(tag in stripped.lower() for tag in ['<br', '<hr', '<img', '<input', '<meta', '<link', '<area', '<base', '<col', '<embed', '<source', '<track', '<wbr']):
+                formatted_lines.append('    ' * indent_level + stripped)
+            # 일반 여는 태그
+            elif stripped.startswith('<') and not stripped.startswith('</'):
+                formatted_lines.append('    ' * indent_level + stripped)
+                # 자체 닫는 태그가 아니고, 한 줄에 열고 닫는 태그가 아닌 경우만 들여쓰기 증가
+                if (not stripped.endswith('/>') and
+                    not self._is_single_line_tag(stripped) and
+                    not any(tag in stripped.lower() for tag in ['<br', '<hr', '<img', '<input', '<meta', '<link', '<area', '<base', '<col', '<embed', '<source', '<track', '<wbr'])):
+                    indent_level += 1
+            # 텍스트 노드나 기타 내용
+            else:
+                formatted_lines.append('    ' * indent_level + stripped)
+
+        return '\n'.join(formatted_lines)
+
+    def _is_single_line_tag(self, line: str) -> bool:
+        """한 줄에서 열고 닫는 태그인지 확인"""
+        stripped = line.strip()
+        # <tag>content</tag> 형태인지 확인
+        if '<' in stripped and '>' in stripped:
+            # 여는 태그와 닫는 태그가 같은 줄에 있는지 확인
+            first_close = stripped.find('>')
+            if first_close != -1 and stripped.find('</', first_close) != -1:
+                return True
+        return False
 
     def check_writer_result(self, data: dict) -> bool:
         """
@@ -209,6 +416,18 @@ class WriterAgent:
 
                 # 파일 작성 - JSON에서 온 이스케이프된 내용 처리
                 processed_content = self._process_file_content(content)
+
+                # 파일 확장자에 따른 추가 포매팅 적용
+                file_extension = full_path.suffix.lower()
+                if file_extension in ['.css']:
+                    processed_content = self._format_css_content(processed_content)
+                elif file_extension in ['.js', '.ts', '.jsx', '.tsx']:
+                    processed_content = self._format_js_ts_content(processed_content)
+                elif file_extension in ['.py']:
+                    processed_content = self._format_python_content(processed_content)
+                elif file_extension in ['.html', '.htm']:
+                    processed_content = self._format_html_content(processed_content)
+
                 with open(full_path, 'w', encoding='utf-8') as f:
                     f.write(processed_content)
 
